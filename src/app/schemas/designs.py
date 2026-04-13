@@ -2,10 +2,8 @@
 
 from typing import Any
 
-from pydantic import BaseModel, Field
-
 from process_improve.experiments.factor import Factor
-
+from pydantic import BaseModel, Field
 
 # ---------------------------------------------------------------------------
 # Request
