@@ -81,6 +81,7 @@ repo-root/
 - **Python >= 3.12** — use modern syntax (type unions with `|`, etc.)
 - **Line length**: 120 characters
 - **Linting**: ruff with rules E, W, F, I, N, UP, B, S, T20, SIM
+- **Pre-commit check**: before committing, always run **both** `ruff check src/ tests/` **and** `ruff format --check src/ tests/` from `backend/`. CI runs both and will fail if either reports issues. Use `ruff format src/ tests/` to auto-fix formatting.
 - **Imports**: sorted by ruff (isort-compatible), `app` is first-party
 - **Async-first**: all database operations use async drivers (asyncpg for PostgreSQL, neo4j async for Neo4j)
 - **src layout**: code lives in `backend/src/app/`, imported as `from app.xxx import yyy`
