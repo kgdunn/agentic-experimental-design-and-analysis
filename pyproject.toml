@@ -1,10 +1,10 @@
 [project]
 name = "agentic-experimental-design-and-analysis"
-version = "0.1.0"
+version = "0.2.0"
 description = "Backend for AI agent-based Design of Experiments analysis"
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.34.0",
@@ -16,6 +16,7 @@ dependencies = [
     "alembic>=1.14.0",
     "neo4j>=5.26.0",
     "httpx>=0.28.0",
+    "process-improve>=1.2.7",
 ]
 
 [project.optional-dependencies]
@@ -35,7 +36,7 @@ build-backend = "hatchling.build"
 packages = ["src/app"]
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py311"
 line-length = 120
 src = ["src"]
 
