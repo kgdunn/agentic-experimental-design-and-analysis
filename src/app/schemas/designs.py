@@ -46,24 +46,3 @@ class GenerateDesignRequest(BaseModel):
         # execute_tool_call expects factors as list[dict], not Factor objects
         data["factors"] = [f.model_dump(exclude_none=True) for f in self.factors]
         return data
-
-
-# ---------------------------------------------------------------------------
-# Response
-# ---------------------------------------------------------------------------
-
-
-class GenerateDesignResponse(BaseModel):
-    """Response body for POST /api/v1/designs/generate."""
-
-    design_coded: list[dict[str, float]]
-    design_actual: list[dict[str, float]]
-    run_order: list[int]
-    design_type: str
-    n_runs: int
-    n_factors: int
-    factor_names: list[str]
-    generators: list[str] | None = None
-    defining_relation: list[str] | None = None
-    resolution: int | None = None
-    alpha: float | None = None
