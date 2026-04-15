@@ -1,6 +1,6 @@
-# Deployment Guide: Agentic DOE App on Hetzner VPS
+# Deployment Guide: Agentic DOE App
 
-Deploy the monorepo (FastAPI + SvelteKit + PostgreSQL + Neo4j) to a Hetzner CX32 VPS (4 vCPU, 8GB RAM, Ubuntu 24.04). All services are containerized via `docker-compose.yml`.
+Deploy the monorepo (FastAPI + SvelteKit + PostgreSQL + Neo4j) to any Linux VPS or cloud server running Ubuntu 24.04. Recommended minimum: 4 vCPU, 8GB RAM. All services are containerized via `docker-compose.yml`.
 
 **Architecture overview:**
 
@@ -14,15 +14,15 @@ Browser ──► Caddy (:80/:443) ──┬──► Frontend (nginx :3000) ─
 
 ---
 
-## Phase 1: VPS Initial Setup
+## Phase 1: Server Initial Setup
 
-### 1.1 — SSH into the VPS
+### 1.1 — SSH into the server
 
 ```bash
-ssh root@<YOUR_HETZNER_IP>
+ssh root@<YOUR_SERVER_IP>
 ```
 
-Replace `<YOUR_HETZNER_IP>` with the IP from the Hetzner Cloud Console.
+Replace `<YOUR_SERVER_IP>` with the public IP address of your server.
 
 ### 1.2 — Update the system
 
@@ -50,7 +50,7 @@ chmod 600 /home/deploy/.ssh/authorized_keys
 Verify from your **local machine**:
 
 ```bash
-ssh deploy@<YOUR_HETZNER_IP>
+ssh deploy@<YOUR_SERVER_IP>
 ```
 
 ### 1.5 — Disable root SSH login
@@ -107,7 +107,7 @@ sudo usermod -aG docker deploy
 
 ```bash
 exit
-ssh deploy@<YOUR_HETZNER_IP>
+ssh deploy@<YOUR_SERVER_IP>
 ```
 
 ### 2.3 — Verify
@@ -190,11 +190,11 @@ NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j
 NEO4J_PASSWORD=<PASTE_SECOND_GENERATED_PASSWORD>
 
-# CORS — your server IP (update when you add a domain)
-CORS_ORIGINS=http://<YOUR_HETZNER_IP>
+# CORS — your server IP or domain (update when you add a domain)
+CORS_ORIGINS=http://<YOUR_SERVER_IP>
 
 # Frontend API URL
-PUBLIC_API_URL=http://<YOUR_HETZNER_IP>
+PUBLIC_API_URL=http://<YOUR_SERVER_IP>
 ```
 
 ### 4.4 — Lock down permissions
@@ -375,8 +375,8 @@ sudo systemctl status caddy
 Now everything is on port 80. Edit `.env`:
 
 ```env
-CORS_ORIGINS=http://<YOUR_HETZNER_IP>
-PUBLIC_API_URL=http://<YOUR_HETZNER_IP>
+CORS_ORIGINS=http://<YOUR_SERVER_IP>
+PUBLIC_API_URL=http://<YOUR_SERVER_IP>
 ```
 
 ```bash
@@ -387,9 +387,9 @@ docker compose restart app
 
 From your browser:
 
-- **Frontend:** `http://<YOUR_HETZNER_IP>/`
-- **API docs:** `http://<YOUR_HETZNER_IP>/docs`
-- **API health:** `http://<YOUR_HETZNER_IP>/api/v1/health`
+- **Frontend:** `http://<YOUR_SERVER_IP>/`
+- **API docs:** `http://<YOUR_SERVER_IP>/docs`
+- **API health:** `http://<YOUR_SERVER_IP>/api/v1/health`
 
 ---
 
@@ -401,7 +401,7 @@ At your domain registrar, create an A record:
 
 | Type | Name | Value | TTL |
 |------|------|-------|-----|
-| A | `@` or subdomain | `<YOUR_HETZNER_IP>` | 300 |
+| A | `@` or subdomain | `<YOUR_SERVER_IP>` | 300 |
 
 Verify: `dig yourdomain.com`
 
@@ -487,7 +487,7 @@ sudo dpkg-reconfigure -plow unattended-upgrades
 When updating the running server with new code:
 
 ```bash
-ssh deploy@<YOUR_HETZNER_IP>
+ssh deploy@<YOUR_SERVER_IP>
 cd /home/deploy/agentic-experimental-design-and-analysis
 
 git pull origin main
@@ -569,5 +569,5 @@ Add:
 | Can't connect from browser | UFW blocking port | `sudo ufw status` — port 80 must be open |
 | "CORS error" in browser | CORS_ORIGINS mismatch | Update `.env`, then `docker compose restart app` |
 | "address already in use" | Ghost Docker state | `docker compose down --remove-orphans && sudo systemctl restart docker` |
-| Docker build OOM | Not enough RAM | `free -h` — CX32 (8GB) should be fine |
+| Docker build OOM | Not enough RAM | `free -h` — need at least 4GB, 8GB recommended |
 | Disk full | Docker images/logs | `docker system prune -f` |
