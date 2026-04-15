@@ -40,3 +40,6 @@ node_modules/
 .svelte-kit/
 .env.local
 .env.*.local
+
+# MkDocs build output
+site/
