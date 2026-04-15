@@ -6,9 +6,8 @@ from httpx import ASGITransport, AsyncClient
 # Set testing environment before importing the app
 os.environ["APP_ENV"] = "testing"
 
-from app.api.deps import AuthUser, TESTING_USER_ID, require_api_key, require_auth  # noqa: E402
+from app.api.deps import TESTING_USER_ID, AuthUser, require_api_key, require_auth  # noqa: E402
 from app.main import app  # noqa: E402
-
 
 # ---------------------------------------------------------------------------
 # Auth overrides for testing — replaces the old APP_ENV=testing bypass
