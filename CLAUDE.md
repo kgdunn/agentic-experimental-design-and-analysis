@@ -149,6 +149,12 @@ repo-root/
 - AWS Cognito or Supabase Auth when social login/MFA needed
 - Redis for token blacklisting (currently stateless)
 
+## Git & PR Workflow
+
+- **Commit after every micro step** — each logical change (new file, edit, deletion) gets its own commit.
+- **Push regularly** — don't accumulate unpushed commits.
+- **Open a PR right away** — create a pull request as soon as the branch has its first commit. Don't wait until the work is "done."
+
 ## Future Architecture (not yet implemented)
 
 ### Agent Orchestration
