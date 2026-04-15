@@ -1,5 +1,6 @@
 <script lang="ts">
   import BaseChart from './BaseChart.svelte';
+  import DesignMatrix from './DesignMatrix.svelte';
 
   interface Props {
     toolName: string;
@@ -126,30 +127,7 @@
 
       {:else if isDesignMatrix}
         <!-- Design matrix table -->
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr>
-                {#each designColumns as col}
-                  <th class="border-b border-gray-200 px-3 py-1.5 text-left text-xs font-medium uppercase text-gray-500">
-                    {col}
-                  </th>
-                {/each}
-              </tr>
-            </thead>
-            <tbody>
-              {#each designMatrix as row, i}
-                <tr class={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                  {#each designColumns as col}
-                    <td class="border-b border-gray-100 px-3 py-1.5 text-gray-700 font-mono">
-                      {row[col]}
-                    </td>
-                  {/each}
-                </tr>
-              {/each}
-            </tbody>
-          </table>
-        </div>
+        <DesignMatrix matrix={designMatrix} columns={designColumns} />
 
       {:else}
         <!-- Generic JSON output -->

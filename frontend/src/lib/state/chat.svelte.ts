@@ -7,8 +7,10 @@
  *   chatState.sendMessage('hello')
  */
 
+import { fetchConversationMessages } from '$lib/api/experiments';
 import { streamChat } from '$lib/api/sse';
 import type { ChatMessage, ContentBlock, ToolUseBlock } from '$lib/types';
+import { experimentsState } from '$lib/state/experiments.svelte';
 
 function generateId(): string {
   return crypto.randomUUID();
@@ -109,6 +111,10 @@ class ChatState {
         this.isStreaming = false;
         this.abortController = null;
       },
+
+      onExperimentCreated: (data) => {
+        experimentsState.notifyCreated(data);
+      },
     });
   }
 
@@ -147,6 +153,23 @@ class ChatState {
     this.conversationId = null;
     this.error = null;
     this.lastUserMessage = null;
+  }
+
+  /** Load an existing conversation's messages (for "return to chat" flow). */
+  async loadConversation(conversationId: string): Promise<void> {
+    if (this.conversationId === conversationId && this.messages.length > 0) return;
+
+    this.error = null;
+    try {
+      const resp = await fetchConversationMessages(conversationId);
+      this.conversationId = resp.conversation_id;
+      this.messages = resp.messages.map((m: ChatMessage) => ({
+        ...m,
+        timestamp: m.timestamp ? new Date(m.timestamp as unknown as string) : new Date(),
+      }));
+    } catch (err: unknown) {
+      this.error = err instanceof Error ? err.message : 'Failed to load conversation';
+    }
   }
 
   // -----------------------------------------------------------------------

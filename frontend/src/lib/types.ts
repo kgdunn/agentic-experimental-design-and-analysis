@@ -5,7 +5,8 @@ export type SSEEventType =
   | 'tool_start'
   | 'tool_result'
   | 'done'
-  | 'error';
+  | 'error'
+  | 'experiment_created';
 
 // ---------------------------------------------------------------------------
 // Content blocks (discriminated union)
@@ -56,6 +57,50 @@ export interface SSECallbacks {
   onToolResult(tool: string, output: Record<string, unknown>): void;
   onDone(): void;
   onError(message: string): void;
+  onExperimentCreated?(data: ExperimentCreatedEvent): void;
+}
+
+// ---------------------------------------------------------------------------
+// Experiment types
+// ---------------------------------------------------------------------------
+
+export type ExperimentStatus = 'draft' | 'active' | 'completed' | 'archived';
+
+export interface ExperimentCreatedEvent {
+  experiment_id: string;
+  name: string;
+  design_type: string;
+}
+
+export interface ExperimentSummary {
+  id: string;
+  name: string;
+  status: ExperimentStatus;
+  design_type: string | null;
+  n_runs: number | null;
+  n_factors: number | null;
+  conversation_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExperimentDetail extends ExperimentSummary {
+  factors: Record<string, unknown>[] | null;
+  design_data: Record<string, unknown> | null;
+  results_data: Record<string, unknown>[] | null;
+}
+
+export interface ExperimentListResponse {
+  experiments: ExperimentSummary[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface ResultsResponse {
+  experiment_id: string;
+  results_data: Record<string, unknown>[] | null;
+  n_results_entered: number;
 }
 
 // ---------------------------------------------------------------------------

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { chatState } from '$lib/state/chat.svelte';
+  import { experimentsState } from '$lib/state/experiments.svelte';
   import MessageBubble from './MessageBubble.svelte';
 
   let messageList: HTMLDivElement | undefined = $state();
@@ -98,6 +99,29 @@
       </div>
     {/if}
   </div>
+
+  <!-- Experiment created notification -->
+  {#if experimentsState.lastCreated}
+    <div class="mx-4 mb-2 flex items-center justify-between rounded-lg bg-blue-50 px-4 py-2 text-sm text-primary">
+      <span>
+        Experiment saved: <strong>{experimentsState.lastCreated.name}</strong>
+      </span>
+      <div class="flex items-center gap-2">
+        <a
+          href="/experiments/{experimentsState.lastCreated.experiment_id}"
+          class="rounded bg-primary px-3 py-1 text-xs font-medium text-white hover:bg-primary-dark"
+        >
+          View
+        </a>
+        <button
+          class="text-xs text-gray-400 hover:text-gray-600"
+          onclick={() => experimentsState.dismissNotification()}
+        >
+          Dismiss
+        </button>
+      </div>
+    </div>
+  {/if}
 
   <!-- Error banner -->
   {#if chatState.error}
