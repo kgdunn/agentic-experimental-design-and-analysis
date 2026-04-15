@@ -35,10 +35,28 @@ docs/        Architecture and frontend specs
 
 ## Prerequisites
 
-- [UV](https://docs.astral.sh/uv/getting-started/installation/) (Python package manager)
+- [UV](https://docs.astral.sh/uv/getting-started/installation/) (Python package manager) — required for all `make` targets
 - [Node.js 22+](https://nodejs.org/) and npm
 - [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/) (for databases and deployment)
 - Python 3.12+ (UV will install this automatically)
+
+### Install UV
+
+UV must be installed before running any `make` commands (`install`, `lint`, `test`, `deploy`, etc.):
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+After installation, restart your shell or run `source $HOME/.local/bin/env` so that `uv` is on your `PATH`.
+
+Verify with:
+
+```bash
+uv --version
+```
+
+See the [UV installation docs](https://docs.astral.sh/uv/getting-started/installation/) for alternative methods (Homebrew, pip, etc.).
 
 ## Quick Start
 
@@ -88,13 +106,13 @@ make clean
 
 | Command | Description |
 |---------|-------------|
-| `make install` | Install backend dependencies (main + dev) via UV |
+| `make install` | Install/update UV, then install backend dependencies |
 | `make debug` | Start backend with hot-reload on port 8000 |
 | `make lint` | Check backend code with ruff (read-only) |
 | `make format` | Auto-fix backend lint issues and format code |
 | `make test` | Run backend test suite with pytest |
 | `make migrate` | Apply database migrations with Alembic |
-| `make frontend-install` | Install frontend npm dependencies |
+| `make frontend-install` | Update npm to latest, then install frontend dependencies |
 | `make frontend-dev` | Start SvelteKit dev server on port 5173 |
 | `make frontend-build` | Build frontend for production |
 | `make deploy` | Build and start all Docker services |
