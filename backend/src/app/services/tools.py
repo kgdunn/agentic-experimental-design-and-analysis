@@ -24,9 +24,7 @@ from app.services.exceptions import ToolExecutionError
 logger = logging.getLogger(__name__)
 
 # Build an allowlist of valid tool names at import time.
-_ALLOWED_TOOL_NAMES: frozenset[str] = frozenset(
-    spec["name"] for spec in _pi_get_specs() if "name" in spec
-)
+_ALLOWED_TOOL_NAMES: frozenset[str] = frozenset(spec["name"] for spec in _pi_get_specs() if "name" in spec)
 
 
 def get_tool_specs(

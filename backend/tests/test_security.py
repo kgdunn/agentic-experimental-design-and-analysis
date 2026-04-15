@@ -158,22 +158,46 @@ class TestProductionSecretsValidation:
     """Server must refuse to start with weak or missing secrets in production."""
 
     def test_empty_jwt_secret_fails_in_production(self):
-        s = Settings(app_env="production", jwt_secret_key="", api_secret_key="ok-key", postgres_password="strong", neo4j_password="strong")  # noqa: S106, E501
+        s = Settings(
+            app_env="production",
+            jwt_secret_key="",
+            api_secret_key="ok-key",  # noqa: S106
+            postgres_password="strong",  # noqa: S106
+            neo4j_password="strong",  # noqa: S106
+        )
         with pytest.raises(SystemExit, match="JWT_SECRET_KEY"):
             s.validate_production_secrets()
 
     def test_empty_api_secret_fails_in_production(self):
-        s = Settings(app_env="production", jwt_secret_key="ok-key", api_secret_key="", postgres_password="strong", neo4j_password="strong")  # noqa: S106, E501
+        s = Settings(
+            app_env="production",
+            jwt_secret_key="ok-key",  # noqa: S106
+            api_secret_key="",
+            postgres_password="strong",  # noqa: S106
+            neo4j_password="strong",  # noqa: S106
+        )
         with pytest.raises(SystemExit, match="API_SECRET_KEY"):
             s.validate_production_secrets()
 
     def test_default_postgres_password_fails_in_production(self):
-        s = Settings(app_env="production", jwt_secret_key="ok", api_secret_key="ok", postgres_password="doe_password", neo4j_password="strong")  # noqa: S106, E501
+        s = Settings(
+            app_env="production",
+            jwt_secret_key="ok",  # noqa: S106
+            api_secret_key="ok",  # noqa: S106
+            postgres_password="doe_password",  # noqa: S106
+            neo4j_password="strong",  # noqa: S106
+        )
         with pytest.raises(SystemExit, match="POSTGRES_PASSWORD"):
             s.validate_production_secrets()
 
     def test_strong_secrets_pass_in_production(self):
-        s = Settings(app_env="production", jwt_secret_key="strong-jwt", api_secret_key="strong-api", postgres_password="strong-pg", neo4j_password="strong-neo")  # noqa: S106, E501
+        s = Settings(
+            app_env="production",
+            jwt_secret_key="strong-jwt",  # noqa: S106
+            api_secret_key="strong-api",  # noqa: S106
+            postgres_password="strong-pg",  # noqa: S106
+            neo4j_password="strong-neo",  # noqa: S106
+        )
         s.validate_production_secrets()  # Should not raise
 
     def test_validation_skipped_in_development(self):
