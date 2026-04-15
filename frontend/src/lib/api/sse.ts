@@ -6,7 +6,7 @@
  * ReadableStream and manual SSE line parsing instead.
  */
 
-import type { SSECallbacks } from '$lib/types';
+import type { ExperimentCreatedEvent, SSECallbacks } from '$lib/types';
 
 // ---------------------------------------------------------------------------
 // SSE line parser
@@ -94,6 +94,9 @@ function dispatchSSEEvent(
       break;
     case 'error':
       callbacks.onError(data.message as string);
+      break;
+    case 'experiment_created':
+      callbacks.onExperimentCreated?.(data as unknown as ExperimentCreatedEvent);
       break;
   }
 }

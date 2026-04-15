@@ -31,6 +31,7 @@ from app.config import settings
 from app.db.session import async_session_factory
 from app.models.conversation import Conversation, Message, ToolCall
 from app.services.exceptions import ToolExecutionError
+from app.services.experiment_service import create_experiment
 from app.services.tools import execute_tool_call, get_tool_specs
 
 logger = logging.getLogger(__name__)
@@ -460,6 +461,20 @@ async def _persist_tool_calls(
 
 
 # ---------------------------------------------------------------------------
+# Auto-save helper
+# ---------------------------------------------------------------------------
+
+
+async def _create_experiment_from_design(
+    db: AsyncSession,
+    design_output: dict[str, Any],
+    conversation_id: uuid.UUID,
+) -> Any:  # noqa: ANN401
+    """Create an Experiment record from a successful generate_design output."""
+    return await create_experiment(db, design_output=design_output, conversation_id=conversation_id)
+
+
+# ---------------------------------------------------------------------------
 # Public orchestrator
 # ---------------------------------------------------------------------------
 
@@ -554,6 +569,13 @@ async def run_chat(
             tool_use_id_map = await _persist_new_messages(db, conversation, new_messages, next_seq)
             await _persist_tool_calls(db, conversation.id, tool_call_records, tool_use_id_map)
 
+            # 9. Auto-create experiments for successful generate_design calls.
+            created_experiments: list[Any] = []
+            for rec in tool_call_records:
+                if rec["tool_name"] == "generate_design" and rec.get("status") == "success":
+                    experiment = await _create_experiment_from_design(db, rec["tool_output"], conversation.id)
+                    created_experiments.append(experiment)
+
             # Update cached message count.
             msg_count = len(new_messages)
             for m in new_messages:
@@ -563,6 +585,17 @@ async def run_chat(
             conversation.message_count = (conversation.message_count or 0) + msg_count
 
             await db.commit()
+
+            # 10. Emit experiment_created events (after commit, so IDs are stable).
+            for experiment in created_experiments:
+                yield _sse(
+                    "experiment_created",
+                    {
+                        "experiment_id": str(experiment.id),
+                        "name": experiment.name,
+                        "design_type": experiment.design_type,
+                    },
+                )
 
         except Exception:
             logger.exception("run_chat failed")

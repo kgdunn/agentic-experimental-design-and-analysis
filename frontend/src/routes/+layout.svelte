@@ -24,6 +24,12 @@
       >
         Chat
       </a>
+      <a
+        href="/experiments"
+        class="text-sm text-gray-600 hover:text-primary transition-colors"
+      >
+        Experiments
+      </a>
     </div>
   </nav>
 
