@@ -1,6 +1,7 @@
 .PHONY: install debug deploy deploy-preflight deploy-up deploy-migrate \
        clean lint format test migrate \
-       frontend-install frontend-dev frontend-build
+       frontend-install frontend-dev frontend-build \
+       docs-serve docs-build
 
 # ── Backend ──────────────────────────────────────────────
 
@@ -38,6 +39,14 @@ frontend-dev:
 
 frontend-build:
 	cd frontend && npm run build
+
+# ── Docs ─────────────────────────────────────────────────
+
+docs-serve:
+	mkdocs serve -a 127.0.0.1:8080
+
+docs-build:
+	mkdocs build --strict
 
 # ── Full Stack ───────────────────────────────────────────
 

@@ -1,7 +1,6 @@
 # Frontend Specification
 
-UI/UX spec for the SvelteKit frontend. For system architecture, see `architecture.md`.
-For development conventions, see the root `CLAUDE.md`.
+UI/UX spec for the SvelteKit frontend. For system architecture, see [Architecture Overview](../architecture/overview.md).
 
 ## Pages & Routes
 

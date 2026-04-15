@@ -6,8 +6,10 @@
 
 The actual statistical analysis tools live in a **separate package**: [`process-improve`](https://github.com/kgdunn/process-improve). That package provides PCA, PLS, factorial designs, response surface methodology, control charts, and more. The backend calls those tools via LangGraph agent orchestration (not yet implemented).
 
-For full system architecture (agent tools, knowledge graph schema, deployment), see `docs/architecture.md`.
-For frontend UI/UX spec (pages, components, streaming protocol), see `docs/frontend-spec.md`.
+For full system architecture (agent tools, knowledge graph schema, deployment), see `docs/architecture/` (split across `overview.md`, `monorepo.md`, `tech-stack.md`, `agent-tools.md`, `knowledge-graph.md`).
+For frontend UI/UX spec (pages, components, streaming protocol), see `docs/frontend/specification.md`.
+For VPS deployment guide, see `docs/deployment/vps-guide.md`.
+Documentation is built with MkDocs and deployed to GitHub Pages.
 
 ## Tech Stack
 
@@ -62,13 +64,18 @@ repo-root/
 │   ├── vite.config.ts
 │   ├── tsconfig.json
 │   └── Dockerfile
-├── docs/                   # Architecture and specs
-│   ├── architecture.md     # System architecture + monorepo rationale
-│   └── frontend-spec.md    # Frontend UI/UX specification
+├── docs/                   # MkDocs documentation source
+│   ├── index.md            # Docs home page
+│   ├── getting-started/    # Prerequisites, quick start, make targets
+│   ├── architecture/       # Overview, monorepo, tech stack, agent tools, knowledge graph
+│   ├── frontend/           # UI/UX specification
+│   ├── development/        # Testing, linting, migrations
+│   └── deployment/         # VPS deployment guide
+├── mkdocs.yml              # MkDocs configuration
 ├── docker-compose.yml      # Full-stack orchestration
 ├── Makefile                # Unified build targets
 ├── .env.example            # Environment template
-├── .github/workflows/      # CI pipelines
+├── .github/workflows/      # CI pipelines (backend, frontend, docker, docs)
 ├── CLAUDE.md
 ├── README.md
 └── LICENSE
@@ -130,6 +137,8 @@ repo-root/
 | `make frontend-install` | Install frontend npm dependencies |
 | `make frontend-dev` | Start SvelteKit dev server (port 5173) |
 | `make frontend-build` | Build frontend for production |
+| `make docs-serve` | Start MkDocs dev server with live reload (port 8080) |
+| `make docs-build` | Build documentation site with `--strict` |
 
 ## Authentication
 
@@ -148,6 +157,12 @@ repo-root/
 ### Future auth graduation
 - AWS Cognito or Supabase Auth when social login/MFA needed
 - Redis for token blacklisting (currently stateless)
+
+## Git & PR Workflow
+
+- **Commit after every micro step** — each logical change (new file, edit, deletion) gets its own commit.
+- **Push regularly** — don't accumulate unpushed commits.
+- **Open a PR right away** — create a pull request as soon as the branch has its first commit. Don't wait until the work is "done."
 
 ## Future Architecture (not yet implemented)
 
