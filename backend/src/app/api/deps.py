@@ -182,5 +182,5 @@ async def require_auth(
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Not authenticated",
-        headers={"WWW-Authenticate": 'Bearer, ApiKey'},
+        headers={"WWW-Authenticate": "Bearer, ApiKey"},
     )

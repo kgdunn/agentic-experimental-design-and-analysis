@@ -472,9 +472,7 @@ async def _create_experiment_from_design(
     user_id: uuid.UUID | None = None,
 ) -> Any:  # noqa: ANN401
     """Create an Experiment record from a successful generate_design output."""
-    return await create_experiment(
-        db, design_output=design_output, conversation_id=conversation_id, user_id=user_id
-    )
+    return await create_experiment(db, design_output=design_output, conversation_id=conversation_id, user_id=user_id)
 
 
 def _build_system_prompt(user_background: str | None) -> str:
