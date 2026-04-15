@@ -1,0 +1,73 @@
+site_name: Agentic Experimental Design & Analysis
+site_url: https://kgdunn.github.io/agentic-experimental-design-and-analysis/
+repo_url: https://github.com/kgdunn/agentic-experimental-design-and-analysis
+repo_name: kgdunn/agentic-experimental-design-and-analysis
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - content.code.copy
+    - content.code.annotate
+    - search.suggest
+    - search.highlight
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: deep orange
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: deep orange
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - tables
+  - toc:
+      permalink: true
+  - attr_list
+  - md_in_html
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Prerequisites: getting-started/prerequisites.md
+      - Quick Start: getting-started/quickstart.md
+      - Make Targets: getting-started/make-targets.md
+  - Architecture:
+      - Overview: architecture/overview.md
+      - Monorepo Rationale: architecture/monorepo.md
+      - Tech Stack: architecture/tech-stack.md
+      - Agent Tools: architecture/agent-tools.md
+      - Knowledge Graph: architecture/knowledge-graph.md
+  - Frontend:
+      - Specification: frontend/specification.md
+  - Development:
+      - Testing: development/testing.md
+      - Linting & Formatting: development/linting.md
+      - Database Migrations: development/migrations.md
+  - Deployment:
+      - VPS Deployment Guide: deployment/vps-guide.md
