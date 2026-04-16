@@ -14,7 +14,7 @@ resolution-markers = [
 ]
 
 [[package]]
-name = "agentic-experimental-design-and-analysis"
+name = "agentic-doe"
 version = "0.4.0"
 source = { editable = "." }
 dependencies = [
