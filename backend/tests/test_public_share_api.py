@@ -46,6 +46,7 @@ class _FakeExperiment:
             ],
         }
         self.results_data = [{"run_index": 0, "yield": 90}]
+        self.evaluation_data = None
         self.created_at = datetime.now(UTC)
         self.user_id = None
 

@@ -57,6 +57,7 @@ class PublicExperimentView(BaseModel):
     factors: list[dict[str, Any]] | None = None
     design_data: dict[str, Any] | None = None
     results_data: list[dict[str, Any]] | None = None
+    evaluation_data: dict[str, Any] | None = None
     owner_display_name: str | None = None
     view_count: int = 0
     expires_at: datetime | None = None

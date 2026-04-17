@@ -42,6 +42,7 @@ def _public_view(share, experiment, owner_display_name: str | None) -> PublicExp
         factors=experiment.factors,
         design_data=experiment.design_data,
         results_data=experiment.results_data if share.allow_results else None,
+        evaluation_data=experiment.evaluation_data,
         owner_display_name=owner_display_name,
         view_count=share.view_count,
         expires_at=share.expires_at,
