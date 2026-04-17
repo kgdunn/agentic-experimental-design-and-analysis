@@ -123,6 +123,43 @@ async def _render_plots_as_data_uris(experiment: Experiment) -> list[dict[str, s
     return rendered
 
 
+def _evaluation_summary(experiment: Experiment) -> dict[str, Any]:
+    """Flatten evaluate_design output for consumption by export templates.
+
+    Scalars are collected into ``summary`` pairs; each list-of-dicts becomes
+    a titled table.  The function is tolerant of the exact key names
+    process-improve uses so it keeps working if upstream adds fields.
+    """
+    ev = getattr(experiment, "evaluation_data", None) or {}
+    if not isinstance(ev, dict) or not ev:
+        return {"present": False, "summary": [], "tables": []}
+
+    summary: list[tuple[str, Any]] = []
+    tables: list[dict[str, Any]] = []
+
+    for key, value in ev.items():
+        if key == "error":
+            continue
+        label = key.replace("_", " ").title()
+        if isinstance(value, (str, int, float, bool)) or value is None:
+            summary.append((label, value))
+        elif isinstance(value, list) and value and isinstance(value[0], dict):
+            columns = list({k for row in value for k in row})
+            tables.append({"title": label, "columns": columns, "rows": value})
+        elif isinstance(value, dict) and all(
+            isinstance(v, (str, int, float, bool)) or v is None for v in value.values()
+        ):
+            tables.append(
+                {
+                    "title": label,
+                    "columns": ["name", "value"],
+                    "rows": [{"name": k, "value": v} for k, v in value.items()],
+                }
+            )
+
+    return {"present": True, "summary": summary, "tables": tables}
+
+
 def _report_context(
     experiment: Experiment,
     *,
@@ -148,6 +185,7 @@ def _report_context(
         "include_results": include_results,
         "share_url": share_url,
         "plots": plots or [],
+        "evaluation": _evaluation_summary(experiment),
     }
 
 
@@ -199,6 +237,19 @@ def build_xlsx(experiment: Experiment, *, include_results: bool = True) -> bytes
     meta_sheet.append(["n_factors", design_data.get("n_factors", "")])
     meta_sheet.append(["n_runs", design_data.get("n_runs", "")])
     meta_sheet.append(["created_at", experiment.created_at.isoformat() if experiment.created_at else ""])
+
+    evaluation = _evaluation_summary(experiment)
+    if evaluation["present"]:
+        eval_sheet = wb.create_sheet("Evaluation")
+        eval_sheet.append(["Metric", "Value"])
+        for label, value in evaluation["summary"]:
+            eval_sheet.append([label, value if value is not None else ""])
+        for table in evaluation["tables"]:
+            eval_sheet.append([])
+            eval_sheet.append([table["title"]])
+            eval_sheet.append(table["columns"])
+            for row in table["rows"]:
+                eval_sheet.append([row.get(c, "") for c in table["columns"]])
 
     buf = io.BytesIO()
     wb.save(buf)

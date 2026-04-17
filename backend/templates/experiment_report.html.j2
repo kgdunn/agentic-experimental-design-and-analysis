@@ -81,6 +81,33 @@
   </tbody>
 </table>
 
+{% if evaluation.present %}
+<h2>Evaluation</h2>
+{% if evaluation.summary %}
+<table>
+  <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+  <tbody>
+    {% for label, value in evaluation.summary %}
+    <tr><td>{{ label }}</td><td>{{ value if value is not none else '' }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% for table in evaluation.tables %}
+<h3>{{ table.title }}</h3>
+<table>
+  <thead>
+    <tr>{% for col in table.columns %}<th>{{ col }}</th>{% endfor %}</tr>
+  </thead>
+  <tbody>
+    {% for row in table.rows %}
+    <tr>{% for col in table.columns %}<td>{{ row.get(col, '') }}</td>{% endfor %}</tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endfor %}
+{% endif %}
+
 {% if plots %}
 <h2>Analysis</h2>
 {% for plot in plots %}

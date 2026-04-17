@@ -22,6 +22,21 @@
 {% for row in rows %}| {% for col in columns %}{{ row.get(col, '') }}{% if not loop.last %} | {% endif %}{% endfor %} |
 {% endfor %}
 
+{% if evaluation.present %}
+## Evaluation
+
+{% for label, value in evaluation.summary %}- **{{ label }}:** {{ value if value is not none else '' }}
+{% endfor %}
+{% for table in evaluation.tables %}
+### {{ table.title }}
+
+| {{ table.columns | join(' | ') }} |
+| {% for _ in table.columns %}---{% if not loop.last %} | {% endif %}{% endfor %} |
+{% for row in table.rows %}| {% for col in table.columns %}{{ row.get(col, '') }}{% if not loop.last %} | {% endif %}{% endfor %} |
+{% endfor %}
+{% endfor %}
+{% endif %}
+
 {% if share_url %}
 ## Plots
 
