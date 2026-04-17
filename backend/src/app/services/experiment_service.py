@@ -179,6 +179,41 @@ async def add_results(
     return experiment
 
 
+async def attach_evaluation(
+    db: AsyncSession,
+    experiment_id: uuid.UUID,
+    evaluation: dict[str, Any],
+    user_id: uuid.UUID | None = None,
+    is_service_account: bool = False,
+) -> Experiment | None:
+    """Overwrite ``evaluation_data`` on an experiment.
+
+    Used both by the agent loop (when ``evaluate_design`` runs right after
+    ``generate_design``) and by the REST re-evaluate endpoint.
+    """
+    experiment = await _get_owned_experiment(db, experiment_id, user_id, is_service_account)
+    if not experiment:
+        return None
+
+    experiment.evaluation_data = evaluation
+    await db.flush()
+    return experiment
+
+
+async def get_latest_experiment_for_conversation(
+    db: AsyncSession,
+    conversation_id: uuid.UUID,
+) -> Experiment | None:
+    """Return the most recently created experiment in a conversation, or None."""
+    result = await db.execute(
+        select(Experiment)
+        .where(Experiment.conversation_id == conversation_id)
+        .order_by(Experiment.created_at.desc())
+        .limit(1),
+    )
+    return result.scalar_one_or_none()
+
+
 async def get_results(
     db: AsyncSession,
     experiment_id: uuid.UUID,
