@@ -1,5 +1,6 @@
 <script lang="ts">
   import BaseChart from './BaseChart.svelte';
+  import DesignEvaluationBlock from './DesignEvaluationBlock.svelte';
   import DesignMatrix from './DesignMatrix.svelte';
 
   interface Props {
@@ -15,6 +16,7 @@
   const TOOL_LABELS: Record<string, string> = {
     generate_design: 'Design Matrix',
     create_design: 'Design Matrix',
+    evaluate_design: 'Design Evaluation',
     analyze_experiment: 'Analysis Results',
     analyze_doe: 'Analysis Results',
     fit_linear_model: 'Model Fit',
@@ -47,6 +49,13 @@
 
   let isDesignMatrix = $derived(
     output != null && Array.isArray(output.design_matrix),
+  );
+
+  let isEvaluation = $derived(
+    toolName === 'evaluate_design' &&
+    output != null &&
+    typeof output === 'object' &&
+    !isDesignMatrix,
   );
 
   let designMatrix = $derived(
@@ -128,6 +137,10 @@
       {:else if isDesignMatrix}
         <!-- Design matrix table -->
         <DesignMatrix matrix={designMatrix} columns={designColumns} />
+
+      {:else if isEvaluation}
+        <!-- Design evaluation block -->
+        <DesignEvaluationBlock evaluation={output as Record<string, unknown>} />
 
       {:else}
         <!-- Generic JSON output -->
