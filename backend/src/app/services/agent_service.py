@@ -33,7 +33,10 @@ from app.db.session import async_session_factory
 from app.models.conversation import Conversation, Message, ToolCall
 from app.services import pricing
 from app.services.exceptions import ToolExecutionError
-from app.services.experiment_service import create_experiment
+from app.services.experiment_service import (
+    create_experiment,
+    get_latest_experiment_for_conversation,
+)
 from app.services.tools import execute_tool_call, get_tool_specs
 
 logger = logging.getLogger(__name__)
@@ -57,7 +60,15 @@ When a user describes their experimental problem:
 2. Recommend an appropriate design strategy with reasoning.
 3. Use the available tools to create designs or analyse results \u2014 do not \
    fabricate numerical outputs yourself.
-4. Explain results in plain language, highlighting which factors matter \
+4. Whenever ``generate_design`` succeeds, immediately call \
+   ``evaluate_design`` on the same design before showing the matrix to \
+   the user. Summarise the resolution, the confounding/aliasing of main \
+   effects and 2-factor interactions, the D- and I-efficiency, and the \
+   power per main effect for the assumed noise level. If the user has \
+   not supplied an expected residual standard deviation (\u03c3) or a \
+   minimum practical effect size, ask for them before calling \
+   ``evaluate_design``.
+5. Explain results in plain language, highlighting which factors matter \
    and what to do next.
 
 Always explain your reasoning before calling a tool, and summarise the \
@@ -635,14 +646,24 @@ async def run_chat(
             tool_use_id_map = await _persist_new_messages(db, conversation, new_messages, next_seq)
             await _persist_tool_calls(db, conversation.id, tool_call_records, tool_use_id_map)
 
-            # 9. Auto-create experiments for successful generate_design calls.
+            # 9. Auto-create experiments for successful generate_design calls,
+            #    and attach evaluate_design output to the most recent
+            #    experiment in this conversation.
             created_experiments: list[Any] = []
             for rec in tool_call_records:
-                if rec["tool_name"] == "generate_design" and rec.get("status") == "success":
+                if rec.get("status") != "success":
+                    continue
+                if rec["tool_name"] == "generate_design":
                     experiment = await _create_experiment_from_design(
                         db, rec["tool_output"], conversation.id, user_id=user_id
                     )
                     created_experiments.append(experiment)
+                elif rec["tool_name"] == "evaluate_design":
+                    target = created_experiments[-1] if created_experiments else None
+                    if target is None:
+                        target = await get_latest_experiment_for_conversation(db, conversation.id)
+                    if target is not None:
+                        target.evaluation_data = rec["tool_output"]
 
             # Update cached message count.
             msg_count = len(new_messages)

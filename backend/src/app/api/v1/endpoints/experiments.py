@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import AuthUser, require_auth
 from app.db.session import get_db_session
 from app.schemas.experiments import (
+    EvaluateRequest,
     ExperimentDetail,
     ExperimentListResponse,
     ExperimentSummary,
@@ -27,6 +28,8 @@ from app.schemas.shares import (
     ShareLinkResponse,
 )
 from app.services import experiment_service, export_service, share_service
+from app.services.exceptions import ToolExecutionError
+from app.services.tools import execute_tool_call
 
 router = APIRouter()
 
@@ -91,6 +94,7 @@ def _detail_from_model(exp: Any) -> ExperimentDetail:
         factors=exp.factors,
         design_data=exp.design_data,
         results_data=exp.results_data,
+        evaluation_data=exp.evaluation_data,
     )
 
 
@@ -211,6 +215,67 @@ async def get_results(
         results_data=data,
         n_results_entered=count,
     )
+
+
+@router.post("/{experiment_id}/evaluate")
+async def evaluate_experiment(
+    experiment_id: uuid.UUID,
+    body: EvaluateRequest,
+    db: AsyncSession = Depends(get_db_session),
+    current_user: AuthUser = Depends(require_auth),
+) -> ExperimentDetail:
+    """Run ``evaluate_design`` on a stored experiment and persist the result.
+
+    Lets users re-run the evaluation with a different assumed sigma or
+    alpha without starting a new chat turn.
+    """
+    exp = await experiment_service.get_experiment(
+        db,
+        experiment_id,
+        user_id=current_user.id,
+        is_service_account=current_user.is_service_account,
+    )
+    if not exp:
+        raise HTTPException(status_code=404, detail="Experiment not found")
+    design_matrix = (exp.design_data or {}).get("design_coded")
+    if not design_matrix:
+        raise HTTPException(status_code=400, detail="Experiment has no coded design to evaluate")
+
+    metrics = body.metrics or [
+        "d_efficiency",
+        "i_efficiency",
+        "resolution",
+        "alias_structure",
+        "vif",
+        "condition_number",
+        "power",
+    ]
+    tool_input: dict[str, Any] = {"design_matrix": design_matrix, "metric": metrics}
+    if body.assumed_sigma is not None:
+        tool_input["sigma"] = body.assumed_sigma
+    if body.effect_size is not None:
+        tool_input["effect_size"] = body.effect_size
+    if body.alpha is not None:
+        tool_input["alpha"] = body.alpha
+
+    try:
+        evaluation = execute_tool_call("evaluate_design", tool_input)
+    except ToolExecutionError as exc:
+        raise HTTPException(status_code=400, detail=exc.message) from exc
+
+    if isinstance(evaluation, dict) and "error" in evaluation:
+        raise HTTPException(status_code=400, detail=str(evaluation["error"]))
+
+    updated = await experiment_service.attach_evaluation(
+        db,
+        experiment_id,
+        evaluation,
+        user_id=current_user.id,
+        is_service_account=current_user.is_service_account,
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="Experiment not found")
+    return _detail_from_model(updated)
 
 
 # ---------------------------------------------------------------------------

@@ -41,11 +41,12 @@ class ExperimentSummary(BaseModel):
 
 
 class ExperimentDetail(ExperimentSummary):
-    """Full experiment with design data and results."""
+    """Full experiment with design data, results, and evaluation."""
 
     factors: list[dict[str, Any]] | None = None
     design_data: dict[str, Any] | None = None
     results_data: list[dict[str, Any]] | None = None
+    evaluation_data: dict[str, Any] | None = None
 
 
 class ExperimentListResponse(BaseModel):
@@ -89,3 +90,32 @@ class ResultsResponse(BaseModel):
     experiment_id: uuid.UUID
     results_data: list[dict[str, Any]] | None = None
     n_results_entered: int
+
+
+class EvaluateRequest(BaseModel):
+    """POST /experiments/{id}/evaluate request body.
+
+    All fields are optional. When ``metrics`` is omitted the endpoint
+    requests a comprehensive default set covering resolution, aliasing,
+    efficiency, VIF, condition number, and power.
+    """
+
+    assumed_sigma: float | None = Field(
+        None,
+        gt=0,
+        description="Residual standard deviation assumed for power analysis.",
+    )
+    effect_size: float | None = Field(
+        None,
+        description="Minimum practical effect size used for power analysis.",
+    )
+    alpha: float | None = Field(
+        None,
+        gt=0,
+        lt=1,
+        description="Type-I error rate used for power calculation.",
+    )
+    metrics: list[str] | None = Field(
+        None,
+        description="Subset of evaluate_design metrics; defaults to a comprehensive set.",
+    )

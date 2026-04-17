@@ -104,6 +104,7 @@ export interface ExperimentDetail extends ExperimentSummary {
   factors: Record<string, unknown>[] | null;
   design_data: Record<string, unknown> | null;
   results_data: Record<string, unknown>[] | null;
+  evaluation_data: Record<string, unknown> | null;
 }
 
 export interface ExperimentListResponse {
@@ -167,6 +168,7 @@ export interface PublicExperimentView {
   factors: Record<string, unknown>[] | null;
   design_data: Record<string, unknown> | null;
   results_data: Record<string, unknown>[] | null;
+  evaluation_data: Record<string, unknown> | null;
   owner_display_name: string | null;
   view_count: number;
   expires_at: string | null;

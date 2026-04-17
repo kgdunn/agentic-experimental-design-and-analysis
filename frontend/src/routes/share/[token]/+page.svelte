@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import BaseChart from '$lib/components/BaseChart.svelte';
+  import DesignEvaluationBlock from '$lib/components/DesignEvaluationBlock.svelte';
   import DesignMatrix from '$lib/components/DesignMatrix.svelte';
   import SignupCTA from '$lib/components/SignupCTA.svelte';
   import { exportPublicShare, fetchPublicShare } from '$lib/api/shares';
@@ -169,6 +170,13 @@
         <div class="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
           <h2 class="mb-4 text-lg font-semibold text-gray-800">Design Matrix</h2>
           <DesignMatrix matrix={matrix()} />
+        </div>
+      {/if}
+
+      <!-- Evaluation -->
+      {#if view.evaluation_data}
+        <div class="mb-6">
+          <DesignEvaluationBlock evaluation={view.evaluation_data} />
         </div>
       {/if}
 

@@ -64,6 +64,10 @@ class Experiment(Base):
     # User-entered results: [{run_index: 0, response_name: value}, ...]
     results_data: Mapped[list | None] = mapped_column(JSON, nullable=True)
 
+    # Output of the most recent evaluate_design call (aliasing, resolution,
+    # efficiency, VIF, condition number, prediction-variance map, power).
+    evaluation_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
     # Link to originating conversation (SET NULL on conversation delete)
     conversation_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
