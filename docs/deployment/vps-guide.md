@@ -364,6 +364,18 @@ docker compose exec postgres psql -U doe_user -d doe_db
 # at the postgres=# prompt, \q to exit
 ```
 
+### 8.3 — Tail application logs
+
+From the repo root on the VPS, use the Makefile targets to follow logs (Ctrl+C to exit):
+
+```bash
+make logs             # backend + frontend, interleaved
+make logs-app         # backend (FastAPI) only
+make logs-frontend    # frontend (nginx) only
+```
+
+Each shows the last 100 lines and then follows. The underlying command is `docker compose logs -f --tail=100 <service>` if you prefer to invoke it directly or add other services (e.g. `postgres`, `neo4j`).
+
 ---
 
 ## Phase 9: Set Up Caddy Reverse Proxy
@@ -653,8 +665,10 @@ Add:
 | Start all services | `docker compose up -d` |
 | Stop all services | `docker compose down` |
 | Rebuild and restart | `docker compose up --build -d` |
-| View all logs | `docker compose logs` |
-| Follow backend logs | `docker compose logs -f app` |
+| View all logs (once) | `docker compose logs` |
+| Tail backend + frontend | `make logs` (or `docker compose logs -f --tail=100 app frontend`) |
+| Tail backend only | `make logs-app` (or `docker compose logs -f --tail=100 app`) |
+| Tail frontend only | `make logs-frontend` (or `docker compose logs -f --tail=100 frontend`) |
 | Check service health | `docker compose ps` |
 | Run migrations | `docker compose exec app uv run alembic upgrade head` |
 | Restart one service | `docker compose restart app` |
