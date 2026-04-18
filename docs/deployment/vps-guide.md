@@ -373,20 +373,24 @@ sudo apt install -y caddy
 
 ### 9.2 — Configure Caddy (HTTP, by IP address)
 
+This is an HTTP-only setup for use **before you have a domain**. Caddy will listen on port 80 only; port 443 (HTTPS) stays closed until you complete Phase 10 with a real domain name, at which point Caddy auto-provisions a Let's Encrypt certificate.
+
+Use `127.0.0.1` (not `localhost`) in the `reverse_proxy` targets. Caddy resolves `localhost` to IPv6 `::1` first, but the Docker services bind to IPv4 `127.0.0.1` only — the mismatch produces `dial tcp [::1]:3000: connect: connection refused` errors in the Caddy log.
+
 ```bash
 sudo tee /etc/caddy/Caddyfile << 'EOF'
 :80 {
     handle /api/* {
-        reverse_proxy localhost:8000
+        reverse_proxy 127.0.0.1:8000
     }
     handle /docs* {
-        reverse_proxy localhost:8000
+        reverse_proxy 127.0.0.1:8000
     }
     handle /openapi.json {
-        reverse_proxy localhost:8000
+        reverse_proxy 127.0.0.1:8000
     }
     handle {
-        reverse_proxy localhost:3000
+        reverse_proxy 127.0.0.1:3000
     }
 }
 EOF
@@ -438,28 +442,38 @@ Verify: `dig yourdomain.com` (for the canonical deployment, the domain is `facto
 
 ### 10.2 — Update the Caddyfile
 
+Replace `yourdomain.com` with your real domain (e.g. `factori.al`). As soon as Caddy sees a domain name as the site address, it will obtain a Let's Encrypt certificate and start listening on port 443.
+
 ```bash
 sudo tee /etc/caddy/Caddyfile << 'EOF'
 yourdomain.com {
     handle /api/* {
-        reverse_proxy localhost:8000
+        reverse_proxy 127.0.0.1:8000
     }
     handle /docs* {
-        reverse_proxy localhost:8000
+        reverse_proxy 127.0.0.1:8000
     }
     handle /openapi.json {
-        reverse_proxy localhost:8000
+        reverse_proxy 127.0.0.1:8000
     }
     handle {
-        reverse_proxy localhost:3000
+        reverse_proxy 127.0.0.1:3000
     }
 }
 EOF
 
-sudo systemctl restart caddy
+sudo systemctl reload caddy
+sudo journalctl -u caddy -f   # watch for "certificate obtained successfully"
 ```
 
-Caddy **automatically** obtains and renews Let's Encrypt certificates.
+Caddy **automatically** obtains and renews Let's Encrypt certificates. Verify both ports are now listening:
+
+```bash
+sudo ss -tlnp | grep -E ':(80|443)\b'   # should show both
+curl -I https://yourdomain.com          # should return 200
+```
+
+If cert provisioning fails, the most common causes are: port 80 not reachable from the public internet (check UFW / cloud firewall), or the DNS A record hasn't propagated yet (`dig yourdomain.com` should return your VPS IP).
 
 ### 10.3 — Update .env
 
@@ -599,7 +613,9 @@ Add:
 | Frontend shows blank page | SvelteKit build failed | `docker compose logs frontend` |
 | Neo4j "unhealthy" | Slow startup (30s+) | Wait, check `docker compose logs neo4j` |
 | Can't connect from browser | UFW blocking port | `sudo ufw status` — port 80 must be open |
-| "CORS error" in browser | CORS_ORIGINS mismatch | Update `.env`, then `docker compose restart app` |
+| `https://...` refused / `ERR_CONNECTION_REFUSED` on 443 | Caddyfile still has `:80 { ... }` (Phase 9) instead of a domain block (Phase 10) — no cert, no 443 listener | Do Phase 10 with your real domain; confirm `sudo ss -tlnp \| grep 443` after reload |
+| Caddy log spams `dial tcp [::1]:<port>: connect: connection refused` | `reverse_proxy localhost:...` resolves to IPv6 but Docker binds IPv4 only | Use `127.0.0.1:<port>` in Caddyfile, then `sudo systemctl reload caddy` |
+| "CORS error" in browser | `CORS_ORIGINS` / `FRONTEND_URL` / `PUBLIC_API_URL` mismatch | Update `.env` so all three match the public origin, then `docker compose restart app` |
 | "address already in use" | Ghost Docker state | `docker compose down --remove-orphans && sudo systemctl restart docker` |
 | Docker build OOM | Not enough RAM | `free -h` — need at least 4GB, 8GB recommended |
 | Disk full | Docker images/logs | `docker system prune -f` |
