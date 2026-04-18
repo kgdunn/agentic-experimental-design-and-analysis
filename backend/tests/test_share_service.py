@@ -45,7 +45,7 @@ async def db_session():
     await engine.dispose()
 
 
-async def _make_experiment(session: AsyncSession, owner_id: uuid.UUID | None = None) -> Experiment:
+async def _make_experiment(session: AsyncSession, owner_id: uuid.UUID) -> Experiment:
     exp = Experiment(
         id=uuid.uuid4(),
         name="Test",
@@ -70,7 +70,6 @@ async def test_create_share_generates_unique_token(db_session: AsyncSession):
         db_session,
         exp.id,
         user_id=owner,
-        is_service_account=False,
         expires_at=None,
         never_expire=False,
         allow_results=True,
@@ -79,7 +78,6 @@ async def test_create_share_generates_unique_token(db_session: AsyncSession):
         db_session,
         exp.id,
         user_id=owner,
-        is_service_account=False,
         expires_at=None,
         never_expire=False,
         allow_results=True,
@@ -97,7 +95,6 @@ async def test_create_share_never_expire(db_session: AsyncSession):
         db_session,
         exp.id,
         user_id=owner,
-        is_service_account=False,
         expires_at=None,
         never_expire=True,
         allow_results=True,
@@ -115,7 +112,6 @@ async def test_create_share_rejects_non_owner(db_session: AsyncSession):
         db_session,
         exp.id,
         user_id=other,
-        is_service_account=False,
         expires_at=None,
         never_expire=True,
         allow_results=True,
@@ -131,14 +127,13 @@ async def test_revoke_sets_revoked_at(db_session: AsyncSession):
         db_session,
         exp.id,
         user_id=owner,
-        is_service_account=False,
         expires_at=None,
         never_expire=True,
         allow_results=True,
     )
     assert share is not None
 
-    ok = await share_service.revoke_share(db_session, share.token, user_id=owner, is_service_account=False)
+    ok = await share_service.revoke_share(db_session, share.token, user_id=owner)
     assert ok is True
 
     refreshed = await db_session.get(ExperimentShare, share.id)
@@ -156,7 +151,6 @@ async def test_resolve_public_share_happy_path_increments_view_count(
         db_session,
         exp.id,
         user_id=owner,
-        is_service_account=False,
         expires_at=None,
         never_expire=True,
         allow_results=True,
@@ -182,13 +176,12 @@ async def test_resolve_public_share_rejects_revoked(db_session: AsyncSession):
         db_session,
         exp.id,
         user_id=owner,
-        is_service_account=False,
         expires_at=None,
         never_expire=True,
         allow_results=True,
     )
     assert share is not None
-    await share_service.revoke_share(db_session, share.token, user_id=owner, is_service_account=False)
+    await share_service.revoke_share(db_session, share.token, user_id=owner)
     assert await share_service.resolve_public_share(db_session, share.token) is None
 
 
@@ -200,7 +193,6 @@ async def test_resolve_public_share_rejects_expired(db_session: AsyncSession):
         db_session,
         exp.id,
         user_id=owner,
-        is_service_account=False,
         expires_at=datetime.now(UTC) - timedelta(seconds=1),
         never_expire=False,
         allow_results=True,

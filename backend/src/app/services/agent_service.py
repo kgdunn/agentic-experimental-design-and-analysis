@@ -76,10 +76,9 @@ Always explain your reasoning before calling a tool, and summarise the \
 results after receiving tool output.
 """
 
-# Role slugs come from the admin-managed ``roles`` table (or the legacy
-# ``users.background`` column). They're still validated against this
-# regex before being interpolated into the system prompt so that a
-# tampered DB row can't inject prompt content.
+# Role slugs come from the admin-managed ``roles`` table. They're
+# validated against this regex before being interpolated into the system
+# prompt so a tampered DB row can't inject prompt content.
 _ALLOWED_BACKGROUND_RE = re.compile(r"^[a-z0-9_]{1,50}$")
 
 
@@ -513,7 +512,7 @@ async def _create_experiment_from_design(
     db: AsyncSession,
     design_output: dict[str, Any],
     conversation_id: uuid.UUID,
-    user_id: uuid.UUID | None = None,
+    user_id: uuid.UUID,
 ) -> Any:  # noqa: ANN401
     """Create an Experiment record from a successful generate_design output."""
     return await create_experiment(db, design_output=design_output, conversation_id=conversation_id, user_id=user_id)
@@ -543,7 +542,7 @@ def _build_system_prompt(user_background: str | None) -> str:
 async def run_chat(
     message: str,
     conversation_id: uuid.UUID | None,
-    user_id: uuid.UUID | None = None,
+    user_id: uuid.UUID,
     user_background: str | None = None,
 ) -> AsyncGenerator[ServerSentEvent, None]:
     """Orchestrate a chat turn: load history, run agent loop, persist, stream SSE.
@@ -561,8 +560,7 @@ async def run_chat(
                 if not conversation:
                     yield _sse("error", {"message": f"Conversation {conversation_id} not found."})
                     return
-                # Ownership check: only service accounts can access other users' conversations.
-                if user_id and conversation.user_id and conversation.user_id != user_id:
+                if conversation.user_id != user_id:
                     yield _sse("error", {"message": f"Conversation {conversation_id} not found."})
                     return
                 result = await db.execute(

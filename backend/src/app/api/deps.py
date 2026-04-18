@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import hmac
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import APIKeyHeader, OAuth2PasswordBearer
@@ -30,8 +30,9 @@ class AuthUser:
     """Lightweight user identity extracted from JWT or API key auth.
 
     Used instead of the SQLAlchemy ``User`` model so synthetic users
-    (testing bypass, API-key service accounts) can be created without
-    a database session.
+    (testing bypass, API-key service user) can be created without a
+    database session. ``background`` is the role slug (from the
+    ``roles`` table) that personalises the LLM system prompt.
     """
 
     id: uuid.UUID
@@ -40,7 +41,6 @@ class AuthUser:
     background: str | None = None
     is_active: bool = True
     is_admin: bool = False
-    is_service_account: bool = field(default=False)
 
 
 # ---------------------------------------------------------------------------
@@ -62,24 +62,12 @@ TESTING_USER_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
 # ---------------------------------------------------------------------------
 
 
-def _testing_user() -> AuthUser:
-    """Return a synthetic user for the testing environment."""
-    return AuthUser(
-        id=TESTING_USER_ID,
-        email="test@example.com",
-        display_name="Test User",
-        is_service_account=True,
-        is_admin=True,
-    )
-
-
 def _service_user() -> AuthUser:
     """Return a synthetic user for API-key authenticated requests."""
     return AuthUser(
         id=SERVICE_USER_ID,
         email="service@internal",
         display_name="Service Account",
-        is_service_account=True,
     )
 
 
@@ -138,14 +126,7 @@ async def get_current_user(
     if not user or not user.is_active:
         return None
 
-    # Prefer the relational role name; fall back to the legacy background
-    # column so existing rows that weren't backfilled still personalise the
-    # system prompt.
-    role_slug: str | None = None
-    if user.role_id is not None and user.role is not None:
-        role_slug = user.role.name
-    elif user.background:
-        role_slug = user.background
+    role_slug: str | None = user.role.name if user.role_id is not None and user.role is not None else None
 
     return AuthUser(
         id=user.id,

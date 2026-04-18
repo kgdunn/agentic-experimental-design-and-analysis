@@ -21,7 +21,7 @@ def _testing_user() -> AuthUser:
         id=TESTING_USER_ID,
         email="test@example.com",
         display_name="Test User",
-        is_service_account=True,
+        is_admin=True,
     )
 
 
