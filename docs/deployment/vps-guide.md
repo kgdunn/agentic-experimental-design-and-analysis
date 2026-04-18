@@ -1,7 +1,6 @@
 # Deployment Guide: Agentic DOE App
 
-!!! info "Canonical deployment"
-    The production instance of this application runs at **[factori.al](https://factori.al)**. The instructions below are written generically so you can deploy to your own domain.
+The production instance of this application runs at **[factori.al](https://factori.al)**. The instructions below are written generically so you can deploy to your own domain.
 
 Deploy the monorepo (FastAPI + SvelteKit + PostgreSQL + Neo4j) to any Linux VPS or cloud server running Ubuntu 24.04. Recommended minimum: 4 vCPU, 8GB RAM. All services are containerized via `docker-compose.yml`.
 
@@ -9,10 +8,10 @@ Deploy the monorepo (FastAPI + SvelteKit + PostgreSQL + Neo4j) to any Linux VPS 
 
 ```
 Browser ──► Caddy (:80/:443) ──┬──► Frontend (nginx :3000) ──► SvelteKit SPA
-                                └──► Backend (uvicorn :8000) ──► FastAPI
-                                         │          │
-                                    PostgreSQL    Neo4j
-                                     (:5432)    (:7474/:7687)
+                               └──► Backend (uvicorn :8000) ──► FastAPI
+                                        │          │
+                                   PostgreSQL    Neo4j
+                                    (:5432)    (:7474/:7687)
 ```
 
 ---
@@ -207,7 +206,24 @@ JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
 # CORS — your server IP or domain (update when you add a domain)
 CORS_ORIGINS=http://<YOUR_SERVER_IP>
 
-# Frontend API URL
+# Admin / Signup approval
+# ADMIN_EMAILS: comma-separated emails of users who can approve signups and receive
+# notifications of pending requests. If empty, nobody can approve new signups.
+ADMIN_EMAILS=you@example.com
+
+# How long an invite link (emailed to an approved user to finish registration) stays valid.
+INVITE_TOKEN_EXPIRE_HOURS=72
+
+# FRONTEND_URL: public origin users load in their browser. Embedded in outgoing
+# emails (approval links, invite links, share links) — if wrong, those links break.
+# Behind Caddy, use the same origin as PUBLIC_API_URL below (no port).
+# Swap to https://yourdomain.com once a domain is set up in Phase 10.
+FRONTEND_URL=http://<YOUR_SERVER_IP>
+
+# PUBLIC_API_URL: public origin the browser uses to reach the API. Caddy fronts
+# both frontend and backend on port 80/443 and routes /api to the backend — so
+# no port here. Swap to https://yourdomain.com once a domain is set up in Phase 10.
+# (Leave as http://localhost:8000 only for local dev without Caddy.)
 PUBLIC_API_URL=http://<YOUR_SERVER_IP>
 ```
 
@@ -390,6 +406,7 @@ Now everything is on port 80. Edit `.env`:
 
 ```env
 CORS_ORIGINS=http://<YOUR_SERVER_IP>
+FRONTEND_URL=http://<YOUR_SERVER_IP>
 PUBLIC_API_URL=http://<YOUR_SERVER_IP>
 ```
 
@@ -448,6 +465,7 @@ Caddy **automatically** obtains and renews Let's Encrypt certificates.
 
 ```env
 CORS_ORIGINS=https://yourdomain.com
+FRONTEND_URL=https://yourdomain.com
 PUBLIC_API_URL=https://yourdomain.com
 ```
 
