@@ -1,28 +1,74 @@
 <script lang="ts">
+  import { getRoles, type Role } from '$lib/api/roles';
   import { postSignupRequest } from '$lib/api/signup';
 
   let email = $state('');
   let useCase = $state('');
+  let roleId = $state<string>(''); // '' | '__other' | <role.id>
+  let otherLabel = $state('');
   let error = $state<string | null>(null);
   let loading = $state(false);
   let submitted = $state(false);
 
+  let roles = $state<Role[]>([]);
+  let rolesLoaded = $state(false);
+
   const maxChars = 400;
   let charsLeft = $derived(maxChars - useCase.length);
+
+  $effect(() => {
+    getRoles()
+      .then((rs) => {
+        roles = rs;
+        rolesLoaded = true;
+      })
+      .catch(() => {
+        // Non-fatal: signup still works without a role
+        rolesLoaded = true;
+      });
+  });
+
+  function buildRequestedRole(): string | null {
+    if (!roleId) return null;
+    if (roleId === '__other') {
+      const trimmed = otherLabel.trim();
+      return trimmed ? `other:${trimmed}` : null;
+    }
+    const picked = roles.find((r) => r.id === roleId);
+    return picked ? picked.name : null;
+  }
+
+  let canSubmit = $derived(
+    !!email &&
+      useCase.length >= 10 &&
+      !!roleId &&
+      (roleId !== '__other' || otherLabel.trim().length > 0),
+  );
 
   async function handleSubmit(e: Event) {
     e.preventDefault();
     error = null;
+    const rr = buildRequestedRole();
+    if (!rr) {
+      error =
+        roleId === '__other'
+          ? 'Please describe your role.'
+          : 'Please pick your role.';
+      return;
+    }
     loading = true;
-
     try {
-      await postSignupRequest(email, useCase);
+      await postSignupRequest(email, useCase, rr);
       submitted = true;
     } catch (err) {
       error = err instanceof Error ? err.message : 'Something went wrong';
     } finally {
       loading = false;
     }
+  }
+
+  function displayRoleName(r: Role): string {
+    return r.description || r.name.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   }
 </script>
 
@@ -76,8 +122,46 @@
         </div>
 
         <div>
+          <label for="role" class="block text-sm font-medium text-gray-700">
+            Your role <span class="text-red-500">*</span>
+          </label>
+          <select
+            id="role"
+            bind:value={roleId}
+            required
+            disabled={!rolesLoaded}
+            class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          >
+            <option value="" disabled>— Select your role —</option>
+            {#each roles as role}
+              <option value={role.id}>{displayRoleName(role)}</option>
+            {/each}
+            <option value="__other">Other (describe below)</option>
+          </select>
+          <p class="mt-1 text-xs text-gray-500">
+            We use your role to tailor the assistant's explanations and examples.
+          </p>
+
+          {#if roleId === '__other'}
+            <input
+              id="other-role"
+              type="text"
+              bind:value={otherLabel}
+              required
+              placeholder="e.g. Polymer scientist working on coatings"
+              maxlength={100}
+              class="mt-2 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            <p class="mt-1 text-xs text-gray-500">
+              Describe your role in a sentence so the admin can set up the right role for you
+              (or contact you to clarify).
+            </p>
+          {/if}
+        </div>
+
+        <div>
           <label for="useCase" class="block text-sm font-medium text-gray-700">
-            What's your role, and why do you want to use Agentic DOE?
+            Why do you want to use Agentic DOE?
           </label>
           <textarea
             id="useCase"
@@ -86,7 +170,7 @@
             minlength={10}
             maxlength={maxChars}
             rows={5}
-            placeholder="E.g. I'm a chemical engineer working on process optimization and would like to use DOE methods with AI assistance to..."
+            placeholder="E.g. I'm working on process optimization and would like to use DOE methods with AI assistance to..."
             class="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary resize-none"
           ></textarea>
           <p class="mt-1 text-xs text-gray-500 text-right">
@@ -97,7 +181,7 @@
 
         <button
           type="submit"
-          disabled={loading || useCase.length < 10}
+          disabled={loading || !canSubmit}
           class="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-50"
         >
           {loading ? 'Submitting...' : 'Request access'}
