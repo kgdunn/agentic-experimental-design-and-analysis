@@ -1,8 +1,8 @@
 """Service layer for experiment CRUD operations.
 
 All functions accept an ``AsyncSession`` so the caller controls the
-transaction boundary.  User-scoped operations accept a ``user_id``
-and ``is_service_account`` parameter to enforce ownership.
+transaction boundary. User-scoped operations accept a ``user_id`` and
+enforce ownership unconditionally — there is no bypass.
 """
 
 from __future__ import annotations
@@ -19,8 +19,8 @@ from app.models.experiment import Experiment
 async def create_experiment(
     db: AsyncSession,
     design_output: dict[str, Any],
+    user_id: uuid.UUID,
     conversation_id: uuid.UUID | None = None,
-    user_id: uuid.UUID | None = None,
     name: str | None = None,
 ) -> Experiment:
     """Create an Experiment from a ``generate_design`` tool output.
@@ -56,22 +56,14 @@ async def create_experiment(
 
 async def list_experiments(
     db: AsyncSession,
-    user_id: uuid.UUID | None = None,
-    is_service_account: bool = False,
+    user_id: uuid.UUID,
     status: str | None = None,
     page: int = 1,
     page_size: int = 20,
 ) -> tuple[list[Experiment], int]:
-    """List experiments with optional status filter and pagination.
-
-    Service accounts see all experiments; regular users see only their own.
-    """
-    query = select(Experiment).order_by(Experiment.created_at.desc())
-    count_query = select(func.count()).select_from(Experiment)
-
-    if not is_service_account:
-        query = query.where(Experiment.user_id == user_id)
-        count_query = count_query.where(Experiment.user_id == user_id)
+    """List the caller's experiments with optional status filter and pagination."""
+    query = select(Experiment).where(Experiment.user_id == user_id).order_by(Experiment.created_at.desc())
+    count_query = select(func.count()).select_from(Experiment).where(Experiment.user_id == user_id)
 
     if status:
         query = query.where(Experiment.status == status)
@@ -91,17 +83,13 @@ async def list_experiments(
 async def _get_owned_experiment(
     db: AsyncSession,
     experiment_id: uuid.UUID,
-    user_id: uuid.UUID | None,
-    is_service_account: bool = False,
+    user_id: uuid.UUID,
 ) -> Experiment | None:
-    """Fetch an experiment, checking ownership for non-service users.
-
-    Returns None if not found or if the user doesn't own it.
-    """
+    """Fetch an experiment, returning None if missing or not owned by ``user_id``."""
     experiment = await db.get(Experiment, experiment_id)
     if not experiment:
         return None
-    if not is_service_account and experiment.user_id != user_id:
+    if experiment.user_id != user_id:
         return None
     return experiment
 
@@ -109,22 +97,20 @@ async def _get_owned_experiment(
 async def get_experiment(
     db: AsyncSession,
     experiment_id: uuid.UUID,
-    user_id: uuid.UUID | None = None,
-    is_service_account: bool = False,
+    user_id: uuid.UUID,
 ) -> Experiment | None:
     """Get a single experiment by ID, respecting ownership."""
-    return await _get_owned_experiment(db, experiment_id, user_id, is_service_account)
+    return await _get_owned_experiment(db, experiment_id, user_id)
 
 
 async def update_experiment(
     db: AsyncSession,
     experiment_id: uuid.UUID,
     updates: dict[str, Any],
-    user_id: uuid.UUID | None = None,
-    is_service_account: bool = False,
+    user_id: uuid.UUID,
 ) -> Experiment | None:
     """Update experiment fields. Returns None if not found or not owned."""
-    experiment = await _get_owned_experiment(db, experiment_id, user_id, is_service_account)
+    experiment = await _get_owned_experiment(db, experiment_id, user_id)
     if not experiment:
         return None
 
@@ -139,11 +125,10 @@ async def update_experiment(
 async def delete_experiment(
     db: AsyncSession,
     experiment_id: uuid.UUID,
-    user_id: uuid.UUID | None = None,
-    is_service_account: bool = False,
+    user_id: uuid.UUID,
 ) -> bool:
     """Delete an experiment. Returns True if found, owned, and deleted."""
-    experiment = await _get_owned_experiment(db, experiment_id, user_id, is_service_account)
+    experiment = await _get_owned_experiment(db, experiment_id, user_id)
     if not experiment:
         return False
     await db.delete(experiment)
@@ -155,15 +140,14 @@ async def add_results(
     db: AsyncSession,
     experiment_id: uuid.UUID,
     results: list[dict[str, Any]],
-    user_id: uuid.UUID | None = None,
-    is_service_account: bool = False,
+    user_id: uuid.UUID,
 ) -> Experiment | None:
     """Merge new results into the experiment's ``results_data``.
 
     Uses ``run_index`` as the merge key: existing rows are updated,
     new rows are appended.  Supports incremental entry.
     """
-    experiment = await _get_owned_experiment(db, experiment_id, user_id, is_service_account)
+    experiment = await _get_owned_experiment(db, experiment_id, user_id)
     if not experiment:
         return None
 
@@ -183,15 +167,14 @@ async def attach_evaluation(
     db: AsyncSession,
     experiment_id: uuid.UUID,
     evaluation: dict[str, Any],
-    user_id: uuid.UUID | None = None,
-    is_service_account: bool = False,
+    user_id: uuid.UUID,
 ) -> Experiment | None:
     """Overwrite ``evaluation_data`` on an experiment.
 
     Used both by the agent loop (when ``evaluate_design`` runs right after
     ``generate_design``) and by the REST re-evaluate endpoint.
     """
-    experiment = await _get_owned_experiment(db, experiment_id, user_id, is_service_account)
+    experiment = await _get_owned_experiment(db, experiment_id, user_id)
     if not experiment:
         return None
 
@@ -217,11 +200,10 @@ async def get_latest_experiment_for_conversation(
 async def get_results(
     db: AsyncSession,
     experiment_id: uuid.UUID,
-    user_id: uuid.UUID | None = None,
-    is_service_account: bool = False,
+    user_id: uuid.UUID,
 ) -> tuple[list[dict[str, Any]] | None, int]:
     """Return ``results_data`` and count of entered results."""
-    experiment = await _get_owned_experiment(db, experiment_id, user_id, is_service_account)
+    experiment = await _get_owned_experiment(db, experiment_id, user_id)
     if not experiment:
         return None, 0
 

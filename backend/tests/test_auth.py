@@ -43,7 +43,6 @@ class _FakeUser:
         self.email = email
         self.password_hash = hash_password(password)
         self.display_name = "Alice"
-        self.background = "chemical_engineer"
         self.role_id = None
         self.role = None
         self.is_admin = is_admin

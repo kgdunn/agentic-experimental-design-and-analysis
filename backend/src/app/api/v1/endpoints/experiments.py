@@ -115,7 +115,6 @@ async def list_experiments(
     experiments, total = await experiment_service.list_experiments(
         db,
         user_id=current_user.id,
-        is_service_account=current_user.is_service_account,
         status=status,
         page=page,
         page_size=page_size,
@@ -135,9 +134,7 @@ async def get_experiment(
     current_user: AuthUser = Depends(require_auth),
 ) -> ExperimentDetail:
     """Get a single experiment by ID."""
-    exp = await experiment_service.get_experiment(
-        db, experiment_id, user_id=current_user.id, is_service_account=current_user.is_service_account
-    )
+    exp = await experiment_service.get_experiment(db, experiment_id, user_id=current_user.id)
     if not exp:
         raise HTTPException(status_code=404, detail="Experiment not found")
     return _detail_from_model(exp)
@@ -154,9 +151,7 @@ async def update_experiment(
     updates = body.model_dump(exclude_none=True)
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update")
-    exp = await experiment_service.update_experiment(
-        db, experiment_id, updates, user_id=current_user.id, is_service_account=current_user.is_service_account
-    )
+    exp = await experiment_service.update_experiment(db, experiment_id, updates, user_id=current_user.id)
     if not exp:
         raise HTTPException(status_code=404, detail="Experiment not found")
     return _detail_from_model(exp)
@@ -169,9 +164,7 @@ async def delete_experiment(
     current_user: AuthUser = Depends(require_auth),
 ) -> dict[str, str]:
     """Delete an experiment."""
-    deleted = await experiment_service.delete_experiment(
-        db, experiment_id, user_id=current_user.id, is_service_account=current_user.is_service_account
-    )
+    deleted = await experiment_service.delete_experiment(db, experiment_id, user_id=current_user.id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Experiment not found")
     return {"detail": "Deleted"}
@@ -185,9 +178,7 @@ async def add_results(
     current_user: AuthUser = Depends(require_auth),
 ) -> ResultsResponse:
     """Add or update results for an experiment (incremental entry)."""
-    exp = await experiment_service.add_results(
-        db, experiment_id, body.results, user_id=current_user.id, is_service_account=current_user.is_service_account
-    )
+    exp = await experiment_service.add_results(db, experiment_id, body.results, user_id=current_user.id)
     if not exp:
         raise HTTPException(status_code=404, detail="Experiment not found")
     data = exp.results_data or []
@@ -205,9 +196,7 @@ async def get_results(
     current_user: AuthUser = Depends(require_auth),
 ) -> ResultsResponse:
     """Get current results for an experiment."""
-    data, count = await experiment_service.get_results(
-        db, experiment_id, user_id=current_user.id, is_service_account=current_user.is_service_account
-    )
+    data, count = await experiment_service.get_results(db, experiment_id, user_id=current_user.id)
     if data is None:
         raise HTTPException(status_code=404, detail="Experiment not found")
     return ResultsResponse(
@@ -229,12 +218,7 @@ async def evaluate_experiment(
     Lets users re-run the evaluation with a different assumed sigma or
     alpha without starting a new chat turn.
     """
-    exp = await experiment_service.get_experiment(
-        db,
-        experiment_id,
-        user_id=current_user.id,
-        is_service_account=current_user.is_service_account,
-    )
+    exp = await experiment_service.get_experiment(db, experiment_id, user_id=current_user.id)
     if not exp:
         raise HTTPException(status_code=404, detail="Experiment not found")
     design_matrix = (exp.design_data or {}).get("design_coded")
@@ -266,13 +250,7 @@ async def evaluate_experiment(
     if isinstance(evaluation, dict) and "error" in evaluation:
         raise HTTPException(status_code=400, detail=str(evaluation["error"]))
 
-    updated = await experiment_service.attach_evaluation(
-        db,
-        experiment_id,
-        evaluation,
-        user_id=current_user.id,
-        is_service_account=current_user.is_service_account,
-    )
+    updated = await experiment_service.attach_evaluation(db, experiment_id, evaluation, user_id=current_user.id)
     if not updated:
         raise HTTPException(status_code=404, detail="Experiment not found")
     return _detail_from_model(updated)
@@ -298,12 +276,7 @@ async def export_experiment(
     current_user: AuthUser = Depends(require_auth),
 ) -> Response:
     """Stream a rendered export of the experiment in the requested format."""
-    exp = await experiment_service.get_experiment(
-        db,
-        experiment_id,
-        user_id=current_user.id,
-        is_service_account=current_user.is_service_account,
-    )
+    exp = await experiment_service.get_experiment(db, experiment_id, user_id=current_user.id)
     if not exp:
         raise HTTPException(status_code=404, detail="Experiment not found")
 
@@ -339,7 +312,6 @@ async def create_share_link(
         db,
         experiment_id,
         user_id=current_user.id,
-        is_service_account=current_user.is_service_account,
         expires_at=body.expires_at,
         never_expire=body.never_expire,
         allow_results=body.allow_results,
@@ -356,12 +328,7 @@ async def list_share_links(
     current_user: AuthUser = Depends(require_auth),
 ) -> ShareLinkListResponse:
     """List all share links an owner has minted for an experiment."""
-    shares = await share_service.list_shares(
-        db,
-        experiment_id,
-        user_id=current_user.id,
-        is_service_account=current_user.is_service_account,
-    )
+    shares = await share_service.list_shares(db, experiment_id, user_id=current_user.id)
     if shares is None:
         raise HTTPException(status_code=404, detail="Experiment not found")
     return ShareLinkListResponse(
@@ -376,12 +343,7 @@ async def revoke_share_link(
     current_user: AuthUser = Depends(require_auth),
 ) -> dict[str, str]:
     """Revoke a share link.  Idempotent for already-revoked tokens."""
-    revoked = await share_service.revoke_share(
-        db,
-        token,
-        user_id=current_user.id,
-        is_service_account=current_user.is_service_account,
-    )
+    revoked = await share_service.revoke_share(db, token, user_id=current_user.id)
     if not revoked:
         raise HTTPException(status_code=404, detail="Share not found")
     return {"detail": "Revoked"}

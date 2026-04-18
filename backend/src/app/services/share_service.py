@@ -34,17 +34,14 @@ def _default_expiry() -> datetime:
 async def create_share(
     db: AsyncSession,
     experiment_id: uuid.UUID,
-    user_id: uuid.UUID | None,
-    is_service_account: bool,
+    user_id: uuid.UUID,
     *,
     expires_at: datetime | None,
     never_expire: bool,
     allow_results: bool,
 ) -> ExperimentShare | None:
     """Mint a new share link.  Returns None when the experiment is not owned."""
-    experiment = await experiment_service.get_experiment(
-        db, experiment_id, user_id=user_id, is_service_account=is_service_account
-    )
+    experiment = await experiment_service.get_experiment(db, experiment_id, user_id=user_id)
     if not experiment:
         return None
 
@@ -60,7 +57,7 @@ async def create_share(
     share = ExperimentShare(
         experiment_id=experiment.id,
         token=token,
-        created_by=user_id if not is_service_account else None,
+        created_by=user_id,
         allow_results=allow_results,
         expires_at=resolved_expiry,
     )
@@ -73,13 +70,10 @@ async def create_share(
 async def list_shares(
     db: AsyncSession,
     experiment_id: uuid.UUID,
-    user_id: uuid.UUID | None,
-    is_service_account: bool,
+    user_id: uuid.UUID,
 ) -> list[ExperimentShare] | None:
     """List all shares (active or revoked) for an owned experiment."""
-    experiment = await experiment_service.get_experiment(
-        db, experiment_id, user_id=user_id, is_service_account=is_service_account
-    )
+    experiment = await experiment_service.get_experiment(db, experiment_id, user_id=user_id)
     if not experiment:
         return None
 
@@ -94,8 +88,7 @@ async def list_shares(
 async def revoke_share(
     db: AsyncSession,
     token: str,
-    user_id: uuid.UUID | None,
-    is_service_account: bool,
+    user_id: uuid.UUID,
 ) -> bool:
     """Mark the share with this token as revoked.
 
@@ -107,9 +100,7 @@ async def revoke_share(
     if not share:
         return False
 
-    experiment = await experiment_service.get_experiment(
-        db, share.experiment_id, user_id=user_id, is_service_account=is_service_account
-    )
+    experiment = await experiment_service.get_experiment(db, share.experiment_id, user_id=user_id)
     if not experiment:
         return False
 
