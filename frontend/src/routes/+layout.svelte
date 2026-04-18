@@ -8,7 +8,7 @@
   let { children }: { children: Snippet } = $props();
 
   // Pages that don't require authentication
-  const publicPaths = ['/', '/login', '/register', '/register/complete'];
+  const publicPaths = ['/', '/login', '/register', '/register/complete', '/prototype'];
   // Path prefixes that don't require authentication
   const publicPathPrefixes = ['/share/'];
 
