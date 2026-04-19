@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 
 from app.api.deps import require_auth
 from app.api.v1.endpoints import (
+    admin_events,
     admin_feedback,
     admin_users,
     auth,
@@ -38,6 +39,10 @@ api_v1_router.include_router(roles.router, prefix="/roles", tags=["roles"])
 
 # Admin user management.
 api_v1_router.include_router(admin_users.router, prefix="/admin/users", tags=["admin-users"])
+
+# Admin events dashboard: read-only list of admin_events rows (backup
+# runs, restore drills, snapshots). require_admin is enforced per-route.
+api_v1_router.include_router(admin_events.router, prefix="/admin/events", tags=["admin-events"])
 
 # Admin feedback inbox: list, reply, mark-replied (admin-only dependency is
 # enforced inside the router, not here, so it's safe to include without
