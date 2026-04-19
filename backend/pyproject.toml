@@ -30,6 +30,7 @@ dependencies = [
     "weasyprint>=63.0",
     "playwright>=1.49.0",
     "psutil>=6.0.0",
+    "maxminddb>=2.6.0",
 ]
 
 [project.optional-dependencies]
