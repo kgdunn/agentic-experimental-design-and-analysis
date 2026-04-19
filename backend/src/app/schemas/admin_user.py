@@ -23,6 +23,7 @@ class AdminUserDetail(BaseModel):
     # Sign-in activity + geo (populated once the user has logged in since
     # the activity-tracking rollout; NULL for accounts that never have).
     last_login_at: datetime | None = None
+    last_login_ip: str | None = None
     country: str | None = None
     timezone: str | None = None
 

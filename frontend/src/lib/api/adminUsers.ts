@@ -16,6 +16,7 @@ export interface AdminUser {
 
   // Sign-in activity + geo (populated on login; null for never-logged-in accounts).
   last_login_at: string | null;
+  last_login_ip: string | null;
   country: string | null;
   timezone: string | null;
 
