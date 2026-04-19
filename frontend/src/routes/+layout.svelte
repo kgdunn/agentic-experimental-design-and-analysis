@@ -8,6 +8,7 @@
   import { anthropicStatus } from '$lib/state/anthropicStatus.svelte';
   import Wordmark from '$lib/components/brand/Wordmark.svelte';
   import SystemBanner from '$lib/components/brand/SystemBanner.svelte';
+  import FeedbackLauncher from '$lib/components/feedback/FeedbackLauncher.svelte';
 
   let { children }: { children: Snippet } = $props();
 
@@ -99,4 +100,6 @@
   <main class="flex-1 overflow-hidden">
     {@render children()}
   </main>
+
+  <FeedbackLauncher />
 </div>
