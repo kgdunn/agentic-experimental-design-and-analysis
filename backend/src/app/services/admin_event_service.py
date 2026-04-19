@@ -20,6 +20,7 @@ import datetime as dt
 import uuid
 from typing import Any
 
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.admin_event import AdminEvent
@@ -89,6 +90,41 @@ async def finish_event(
             started = started.replace(tzinfo=dt.UTC)
         event.duration_ms = int((now - started).total_seconds() * 1000)
     await db.flush()
+
+
+async def list_events(
+    db: AsyncSession,
+    *,
+    page: int = 1,
+    page_size: int = 50,
+    event_type: str | None = None,
+    status: str | None = None,
+) -> tuple[list[AdminEvent], int]:
+    """Paginated event list for the admin dashboard.
+
+    Filters are ANDed. Ordering is ``created_at DESC`` so the freshest
+    rows land on page 1 (hits ``ix_admin_events_created_at`` and its
+    per-event-type / per-status composite friends from migration 0002).
+    """
+    query = select(AdminEvent)
+    count_query = select(func.count()).select_from(AdminEvent)
+
+    conditions: list[Any] = []
+    if event_type:
+        conditions.append(AdminEvent.event_type == event_type)
+    if status:
+        conditions.append(AdminEvent.status == status)
+
+    if conditions:
+        query = query.where(*conditions)
+        count_query = count_query.where(*conditions)
+
+    query = query.order_by(AdminEvent.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
+    result = await db.execute(query)
+    events = list(result.scalars().all())
+
+    total = (await db.execute(count_query)).scalar_one()
+    return events, total
 
 
 async def log_snapshot(
