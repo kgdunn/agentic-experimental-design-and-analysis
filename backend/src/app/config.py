@@ -58,6 +58,7 @@ class Settings(BaseSettings):
     chat_rate_limit: str = "10/minute"
     auth_rate_limit: str = "5/minute"
     register_rate_limit: str = "3/hour"
+    feedback_rate_limit: str = "20/hour"
 
     # Tool execution
     # ``tool_safe_mode`` routes process_improve calls through
