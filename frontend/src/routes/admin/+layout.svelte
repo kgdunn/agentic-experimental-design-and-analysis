@@ -6,6 +6,7 @@
     { label: 'Users', href: '/admin/users' },
     { label: 'Roles', href: '/admin/roles' },
     { label: 'Feedback', href: '/admin/feedback' },
+    { label: 'Events', href: '/admin/events' },
   ];
 
   let { children } = $props();
