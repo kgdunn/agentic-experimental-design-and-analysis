@@ -1,4 +1,4 @@
-# Agentic Experimental Design & Analysis
+# Factorial
 
 !!! tip "Try it live"
     This project powers **[factori.al](https://factori.al)** — use it right away, or follow the guides below to self-host your own instance.

@@ -1,4 +1,4 @@
-# Agentic Experimental Design & Analysis
+# Factorial
 
 [![Live at factori.al](https://img.shields.io/badge/live-factori.al-blue?style=for-the-badge)](https://factori.al)
 [![CI — Backend](https://github.com/kgdunn/agentic-doe/actions/workflows/ci-backend.yml/badge.svg)](https://github.com/kgdunn/agentic-doe/actions/workflows/ci-backend.yml)

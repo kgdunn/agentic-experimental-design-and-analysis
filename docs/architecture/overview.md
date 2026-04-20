@@ -1,6 +1,6 @@
 # System Architecture
 
-Cross-repo system architecture for the Agentic Experimental Design & Analysis platform.
+Cross-repo system architecture for the Factorial platform.
 
 ## Product Overview
 
