@@ -1,4 +1,4 @@
-# Deployment Guide: Agentic DOE App
+# Deployment Guide: Factorial
 
 The production instance of this application runs at **[factori.al](https://factori.al)**. The instructions below are written generically so you can deploy to your own domain.
 
