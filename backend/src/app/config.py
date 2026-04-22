@@ -70,6 +70,12 @@ class Settings(BaseSettings):
     tool_max_cells: int = 1_000_000
     tool_max_string: int = 100_000
 
+    # Fake-data simulator. When true, reveal_simulator dispatches with
+    # confirmed=True on the FIRST call and bypasses the user-confirmation
+    # gate. Intended only for debugging or internal tooling; keep false
+    # in production so the LLM cannot leak the hidden model uninvited.
+    simulator_reveal_force: bool = False
+
     # MCP server (hosted). Exposes the process_improve tool registry over
     # HTTP + SSE. Gated by auth + per-identity CPU budget; off by default
     # until an operator explicitly turns it on.
