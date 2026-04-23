@@ -19,6 +19,22 @@ context.
       (no RNG at all) vs. which depend on a seed. The exporter should key
       off that list rather than hard-coding assumptions.
 
+## Pre-existing CI failures (unrelated to reproducible-code-export)
+
+- [ ] `tests/test_simulator_flow.py::test_loop_create_then_simulate_end_to_end`,
+      `::test_loop_reveal_requires_two_asks`, and
+      `::test_loop_reveal_with_force_reveals_immediately` fail with
+      `KeyError: 'sim_id'` on `main` at `42f08b2` (verified 2026-04-23).
+      The scripted `_Dynamic.stream` stub in those tests parses the
+      `tool_result` content expecting a `sim_id` key, but the
+      `create_simulator` tool output under `process-improve==1.5.1`
+      (pinned in `uv.lock`) no longer returns that key. Either update
+      the test to read whatever key the newer tool emits, or adjust
+      the simulator tool's output schema upstream in `process-improve`
+      so the contract is restored. CI has been red on `main` because
+      of this — fix it on a dedicated branch, not piggybacked onto
+      unrelated feature PRs.
+
 ## Factorial backend
 
 - [ ] Populate `ToolCall.tool_version` per call in
