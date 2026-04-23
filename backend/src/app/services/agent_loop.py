@@ -49,10 +49,10 @@ def _run_agent_loop(  # noqa: PLR0913
     model: str,
     turn_id: uuid.UUID,
     system_prompt: str,
-    simulator_states: SimulatorStates,
-    reveal_counts: RevealCounts,
-    newly_created_sims: list[dict[str, Any]],
-    force_reveal: bool,
+    simulator_states: SimulatorStates | None = None,
+    reveal_counts: RevealCounts | None = None,
+    newly_created_sims: list[dict[str, Any]] | None = None,
+    force_reveal: bool = False,
 ) -> dict[str, Any]:
     """Synchronous agent loop executed in a background thread.
 
@@ -60,6 +60,15 @@ def _run_agent_loop(  # noqa: PLR0913
     Returns a result dict with ``new_messages`` (Anthropic-format messages
     appended during the loop) and ``tool_call_records`` (timing/audit data).
     """
+    # Defaults allow callers that don't use the simulator hooks (e.g.
+    # legacy tests) to call this loop with the original signature.
+    if simulator_states is None:
+        simulator_states = {}
+    if reveal_counts is None:
+        reveal_counts = {}
+    if newly_created_sims is None:
+        newly_created_sims = []
+
     new_messages: list[dict[str, Any]] = []
     tool_call_records: list[dict[str, Any]] = []
     agent_turn = 0
