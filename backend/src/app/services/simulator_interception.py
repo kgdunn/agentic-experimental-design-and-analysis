@@ -33,9 +33,7 @@ SimulatorStates = dict[str, dict[str, Any]]
 # during the current conversation without the user having confirmed.
 RevealCounts = dict[str, int]
 
-SIMULATOR_TOOL_NAMES: frozenset[str] = frozenset(
-    {"create_simulator", "simulate_process", "reveal_simulator"}
-)
+SIMULATOR_TOOL_NAMES: frozenset[str] = frozenset({"create_simulator", "simulate_process", "reveal_simulator"})
 
 
 def pre_dispatch(
