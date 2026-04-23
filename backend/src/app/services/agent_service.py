@@ -30,7 +30,7 @@ from sse_starlette.sse import ServerSentEvent
 from app.config import settings
 from app.db.session import async_session_factory
 from app.models.conversation import ChatEvent, Conversation, Message, ToolCall
-from app.services.agent_loop import MAX_AGENT_TURNS, _run_agent_loop  # noqa: F401
+from app.services.agent_loop import _run_agent_loop
 from app.services.experiment_service import (
     create_experiment,
     get_latest_experiment_for_conversation,
