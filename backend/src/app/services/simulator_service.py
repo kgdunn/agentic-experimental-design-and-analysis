@@ -32,9 +32,7 @@ async def list_simulators_for_conversation(
 ) -> list[Simulator]:
     """Return all simulator rows attached to a conversation (chronological)."""
     result = await db.execute(
-        select(Simulator)
-        .where(Simulator.conversation_id == conversation_id)
-        .order_by(Simulator.created_at.asc()),
+        select(Simulator).where(Simulator.conversation_id == conversation_id).order_by(Simulator.created_at.asc()),
     )
     return list(result.scalars().all())
 
