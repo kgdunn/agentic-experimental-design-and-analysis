@@ -92,6 +92,18 @@ The version is defined in `backend/pyproject.toml` under `[project] version`. It
 
 The PyPI publish workflow (`.github/workflows/publish.yml`) automatically detects version changes on push to `main` and publishes to PyPI, then creates a GitHub Release with a `v$VERSION` tag.
 
+## Configuration — `.env.example` is canonical
+
+`.env.example` at the repo root is the **single source of truth** for every environment variable the backend reads. It must stay in sync with `backend/src/app/config.py`: every field on the `Settings` class has a matching entry in `.env.example`, and no variable is documented anywhere else unless it also appears there.
+
+**When a PR touches config, check all three together:**
+
+1. **Add / rename / remove a field in `config.py`** → update `.env.example` in the same commit (new entry, rename, or deletion with a short comment line if the removal is load-bearing).
+2. **Update `docs/deployment/vps-guide.md`** (Phase 4.3 and any other place that enumerates env vars) so it does not contradict `.env.example`. The VPS guide should show only the production-specific overrides the operator must change, and explicitly point at `.env.example` as the canonical list — it must never re-declare a variable that no longer exists in `.env.example` (e.g. `ADMIN_EMAILS`, which was removed when admins moved into the `users` table).
+3. **Never leave obsolete vars in the docs.** If a variable was removed from `config.py`, grep the repo (`rg '\bVAR_NAME\b' docs/ README.md CLAUDE.md`) and delete every lingering reference — stale env-var docs silently mislead operators.
+
+If you catch a drift between `config.py`, `.env.example`, and the deployment docs while working on an unrelated task, fix it in a small dedicated commit rather than letting it rot.
+
 ## Development Conventions
 
 ### Backend (Python)

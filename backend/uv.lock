@@ -17,7 +17,7 @@ resolution-markers = [
 ]
 
 [[package]]
-name = "agentic-doe"
+name = "factorial"
 version = "0.18.1"
 source = { editable = "." }
 dependencies = [

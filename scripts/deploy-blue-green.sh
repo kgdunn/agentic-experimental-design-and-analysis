@@ -34,7 +34,7 @@ set -euo pipefail
 
 # ------------------------------------------------------------------ config
 
-STATE_DIR="${STATE_DIR:-/var/lib/agentic-doe}"
+STATE_DIR="${STATE_DIR:-/var/lib/factorial}"
 STATE_FILE="${STATE_FILE:-$STATE_DIR/active-color}"
 CADDY_SNIPPET="${CADDY_SNIPPET:-/etc/caddy/active_backend.caddy}"
 CADDY_RELOAD_CMD="${CADDY_RELOAD_CMD:-sudo systemctl reload caddy}"

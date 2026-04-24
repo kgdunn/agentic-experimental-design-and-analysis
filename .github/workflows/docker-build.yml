@@ -26,7 +26,7 @@ jobs:
         with:
           context: ./backend
           push: false
-          tags: agentic-doe-api:latest
+          tags: factorial-api:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -39,6 +39,6 @@ jobs:
         with:
           context: ./frontend
           push: false
-          tags: agentic-doe-frontend:latest
+          tags: factorial-frontend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max

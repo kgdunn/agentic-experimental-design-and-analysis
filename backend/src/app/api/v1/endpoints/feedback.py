@@ -24,19 +24,13 @@ from app.models.user_feedback import UserFeedback
 from app.schemas.feedback import FeedbackSubmitRequest, FeedbackSubmitResponse
 from app.services import admin_service, feedback_service
 from app.services.auth_service import get_user_by_id
-from app.services.feedback_emails import (
-    notify_admins_of_submission,
-    notify_user_of_submission,
-)
-from app.services.feedback_service import (
-    ScreenshotInvalidError,
-    ScreenshotTooLargeError,
-)
+from app.services.feedback_emails import notify_admins_of_submission, notify_user_of_submission
+from app.services.feedback_service import ScreenshotInvalidError, ScreenshotTooLargeError
 
 try:
     from importlib.metadata import version as _pkg_version
 
-    _APP_VERSION: str | None = _pkg_version("agentic-doe")
+    _APP_VERSION: str | None = _pkg_version("factorial")
 except Exception:  # noqa: BLE001
     _APP_VERSION = None
 

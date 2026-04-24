@@ -5,13 +5,13 @@ VPS and invoked from cron. Neo4j is **out of scope**.
 
 ## What's in here
 
-| file | purpose |
-|---|---|
-| `backup-postgres.sh` | preflight → dump → upload → verify → log |
-| `restore-postgres.sh` | list / download / verify / restore from S3 |
-| `cron-backup-wrapper.sh` | cron shim: PATH, `/etc/default/doe-backup`, `chronic` |
-| `restore-drill.sh` | weekly: restore newest backup to scratch DB, smoke-query, drop |
-| `prune-old-run-logs.sh` | safety net for run-log cleanup if logrotate isn't present |
+| file                     | purpose                                                        |
+| ------------------------ | -------------------------------------------------------------- |
+| `backup-postgres.sh`     | preflight → dump → upload → verify → log                       |
+| `restore-postgres.sh`    | list / download / verify / restore from S3                     |
+| `cron-backup-wrapper.sh` | cron shim: PATH, `/etc/default/doe-backup`, `chronic`          |
+| `restore-drill.sh`       | weekly: restore newest backup to scratch DB, smoke-query, drop |
+| `prune-old-run-logs.sh`  | safety net for run-log cleanup if logrotate isn't present      |
 
 Every script records its run history in the `admin_events` table (see
 `backend/alembic/versions/0002_admin_events.py`). Rows go from
@@ -47,11 +47,11 @@ In the Hetzner Cloud Console → **Object Storage**:
    scoped to this bucket only.
 4. Configure **lifecycle rules** (GFS — grandfather/father/son):
 
-   | prefix | expire after |
-   |---|---|
-   | `postgres/daily/` | 35 days |
-   | `postgres/weekly/` | 100 days |
-   | `postgres/monthly/` | 400 days |
+   | prefix              | expire after |
+   | ------------------- | ------------ |
+   | `postgres/daily/`   | 35 days      |
+   | `postgres/weekly/`  | 100 days     |
+   | `postgres/monthly/` | 400 days     |
 
    Sample rule JSON (paste into Hetzner Console → Lifecycle editor,
    one rule per prefix):
@@ -104,7 +104,7 @@ EOF
 chmod 600 ~/.aws/config
 ```
 
-Hetzner ignores the AWS region, but the CLI profile needs *some* value.
+Hetzner ignores the AWS region, but the CLI profile needs _some_ value.
 
 ### 4. Create `/etc/default/doe-backup`
 
@@ -112,7 +112,7 @@ Copy the template shipped at `deploy/etc-default/doe-backup.example`
 into place and fill it in:
 
 ```bash
-sudo cp /home/deploy/agentic-doe/deploy/etc-default/doe-backup.example \
+sudo cp /home/deploy/factorial/deploy/etc-default/doe-backup.example \
         /etc/default/doe-backup
 sudo chown root:root /etc/default/doe-backup
 sudo chmod 0644 /etc/default/doe-backup
@@ -125,7 +125,7 @@ At minimum:
 S3_ENDPOINT_URL=https://fsn1.your-objectstorage.com
 S3_BUCKET=doe-db-backups-prod
 AWS_PROFILE=doe-backup
-REPO_DIR=/home/deploy/agentic-doe
+REPO_DIR=/home/deploy/factorial
 ```
 
 Optional but recommended:
@@ -138,7 +138,7 @@ WEBHOOK_URL=https://hooks.slack.com/services/... # failure alerts
 ### 5. Smoke test
 
 ```bash
-cd /home/deploy/agentic-doe
+cd /home/deploy/factorial
 ./scripts/backup-postgres.sh --dry-run   # no side effects
 ./scripts/backup-postgres.sh             # real run; ~1 min
 ```
@@ -156,11 +156,11 @@ Verify:
 ### 6. Install cron + logrotate
 
 ```bash
-sudo cp /home/deploy/agentic-doe/deploy/cron/doe-backup.cron /etc/cron.d/doe-backup
+sudo cp /home/deploy/factorial/deploy/cron/doe-backup.cron /etc/cron.d/doe-backup
 sudo chown root:root /etc/cron.d/doe-backup
 sudo chmod 0644 /etc/cron.d/doe-backup
 
-sudo cp /home/deploy/agentic-doe/deploy/logrotate/doe-backup /etc/logrotate.d/doe-backup
+sudo cp /home/deploy/factorial/deploy/logrotate/doe-backup /etc/logrotate.d/doe-backup
 sudo chown root:root /etc/logrotate.d/doe-backup
 sudo chmod 0644 /etc/logrotate.d/doe-backup
 
@@ -170,12 +170,12 @@ sudo chown deploy:deploy /var/log/doe
 
 The cron schedule is (all times UTC):
 
-| when | what |
-|---|---|
-| daily 03:07 | `backup-postgres.sh daily` |
-| Sun 03:30 | `backup-postgres.sh weekly` |
+| when               | what                         |
+| ------------------ | ---------------------------- |
+| daily 03:07        | `backup-postgres.sh daily`   |
+| Sun 03:30          | `backup-postgres.sh weekly`  |
 | 1st of month 04:00 | `backup-postgres.sh monthly` |
-| Mon 04:30 | `restore-drill.sh` |
+| Mon 04:30          | `restore-drill.sh`           |
 
 ## Day-2 operations
 

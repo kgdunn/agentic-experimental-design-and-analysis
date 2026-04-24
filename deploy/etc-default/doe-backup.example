@@ -27,7 +27,7 @@ S3_BUCKET=doe-db-backups-prod
 AWS_PROFILE=doe-backup
 
 # Path to the repo checkout on the VPS.
-REPO_DIR=/home/deploy/agentic-doe
+REPO_DIR=/home/deploy/factorial
 
 # --- OPTIONAL ----------------------------------------------------------
 

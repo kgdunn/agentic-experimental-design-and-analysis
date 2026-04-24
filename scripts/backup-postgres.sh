@@ -61,7 +61,7 @@
 #   6. Install cron from deploy/cron/doe-backup.cron — see README.
 #
 # CONFIG KNOBS (env vars; documented defaults in DEFAULTS block below):
-#   REPO_DIR          path to the checkout (default: /home/deploy/agentic-doe)
+#   REPO_DIR          path to the checkout (default: /home/deploy/factorial)
 #   S3_ENDPOINT_URL   S3-compatible endpoint (REQUIRED — no default)
 #   S3_BUCKET         target bucket (REQUIRED — no default)
 #   S3_PREFIX         base key prefix (default: postgres)
@@ -84,7 +84,7 @@ set -Eeuo pipefail
 IFS=$'\n\t'
 
 # ---- DEFAULTS ----------------------------------------------------------
-: "${REPO_DIR:=/home/deploy/agentic-doe}"
+: "${REPO_DIR:=/home/deploy/factorial}"
 : "${S3_PREFIX:=postgres}"
 : "${AWS_PROFILE:=doe-backup}"
 : "${RETENTION_CLASS:=daily}"

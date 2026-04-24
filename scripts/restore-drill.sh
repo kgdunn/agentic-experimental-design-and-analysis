@@ -22,7 +22,7 @@ if [[ -r /etc/default/doe-backup ]]; then
     source /etc/default/doe-backup
 fi
 
-: "${REPO_DIR:=/home/deploy/agentic-doe}"
+: "${REPO_DIR:=/home/deploy/factorial}"
 : "${S3_PREFIX:=postgres}"
 : "${AWS_PROFILE:=doe-backup}"
 : "${LOG_DIR:=/var/log/doe}"

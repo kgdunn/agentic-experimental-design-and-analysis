@@ -4,8 +4,8 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/kgdunn/agentic-doe.git
-cd agentic-doe
+git clone https://github.com/kgdunn/factorial.git
+cd factorial
 
 # Copy the environment template
 cp .env.example .env
