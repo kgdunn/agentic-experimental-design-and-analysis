@@ -13,7 +13,7 @@ router = APIRouter()
 @router.get("", response_model=HealthResponse)
 async def health_check():
     """Basic liveness probe — confirms the API process is running."""
-    return HealthResponse(status="ok", service="agentic-doe-api")
+    return HealthResponse(status="ok", service="factorial-api")
 
 
 @router.get("/ready", response_model=HealthResponse)
@@ -27,7 +27,7 @@ async def readiness_check(
     result = await neo4j_session.run("RETURN 1 AS n")
     await result.consume()
 
-    return HealthResponse(status="ok", service="agentic-doe-api")
+    return HealthResponse(status="ok", service="factorial-api")
 
 
 @router.get("/llm")

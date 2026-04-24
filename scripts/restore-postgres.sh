@@ -34,7 +34,7 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-: "${REPO_DIR:=/home/deploy/agentic-doe}"
+: "${REPO_DIR:=/home/deploy/factorial}"
 : "${S3_PREFIX:=postgres}"
 : "${AWS_PROFILE:=doe-backup}"
 : "${RESTORE_TIMEOUT:=3600}"

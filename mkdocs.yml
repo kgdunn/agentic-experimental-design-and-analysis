@@ -1,7 +1,7 @@
 site_name: Factorial
-site_url: https://kgdunn.github.io/agentic-doe/
-repo_url: https://github.com/kgdunn/agentic-doe
-repo_name: kgdunn/agentic-doe
+site_url: https://kgdunn.github.io/factorial/
+repo_url: https://github.com/kgdunn/factorial
+repo_name: kgdunn/factorial
 edit_uri: edit/main/docs/
 
 theme:

@@ -136,8 +136,8 @@ docker rmi hello-world 2>/dev/null
 ```bash
 sudo apt install -y git make
 cd /home/deploy
-git clone https://github.com/kgdunn/agentic-doe.git
-cd agentic-doe
+git clone https://github.com/kgdunn/factorial.git
+cd factorial
 ```
 
 > If the repo is private, set up a GitHub deploy key or personal access token first.
@@ -171,7 +171,7 @@ openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 32; echo
 nano .env
 ```
 
-Set these values (replace placeholders):
+The canonical list of every setting the backend reads lives in [`.env.example`](https://github.com/kgdunn/factorial/blob/main/.env.example) at the repo root — it stays in sync with `backend/src/app/config.py`. The block below only covers the values you must change from the template defaults for a production deploy. Leave everything else (`TOOL_*`, `MCP_*`, `SHARE_TOKEN_*`, `EXPORTS_*`, `CHAT_RATE_LIMIT`, etc.) at the `.env.example` defaults unless you know you need to override them.
 
 ```env
 # Application
@@ -192,7 +192,10 @@ NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j
 NEO4J_PASSWORD=<PASTE_SECOND_GENERATED_PASSWORD>
 
-# Security — API key for machine-to-machine authentication
+# Anthropic — required for the agent loop
+ANTHROPIC_API_KEY=sk-ant-...
+
+# Security — API key for endpoint authentication
 # Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
 API_SECRET_KEY=<GENERATE_A_RANDOM_SECRET>
 
@@ -203,36 +206,36 @@ JWT_ALGORITHM=HS256
 JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
 JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
 
-# CORS — your server IP or domain (update when you add a domain)
+# CORS / public origins — your server IP for now. All three must match the
+# origin the browser actually hits. Swap to https://yourdomain.com in Phase 10.
+# FRONTEND_URL is also embedded in outgoing emails (invite, approval, share
+# links) — if wrong, those links break.
 CORS_ORIGINS=http://<YOUR_SERVER_IP>
-
-# Admin / Signup approval
-# ADMIN_EMAILS: comma-separated emails of users who can approve signups and receive
-# notifications of pending requests. If empty, nobody can approve new signups.
-ADMIN_EMAILS=you@example.com
-
-# How long an invite link (emailed to an approved user to finish registration) stays valid.
-INVITE_TOKEN_EXPIRE_HOURS=72
-
-# FRONTEND_URL: public origin users load in their browser. Embedded in outgoing
-# emails (approval links, invite links, share links) — if wrong, those links break.
-# Behind Caddy, use the same origin as PUBLIC_API_URL below (no port).
-# Swap to https://yourdomain.com once a domain is set up in Phase 10.
 FRONTEND_URL=http://<YOUR_SERVER_IP>
-
-# PUBLIC_API_URL: public origin the browser uses to reach the API. Caddy fronts
-# both frontend and backend on port 80/443 and routes /api to the backend — so
-# no port here. Swap to https://yourdomain.com once a domain is set up in Phase 10.
-# (Leave as http://localhost:8000 only for local dev without Caddy.)
 PUBLIC_API_URL=http://<YOUR_SERVER_IP>
+
+# SMTP — required for invite, signup-approval, and password-reset emails.
+# Leave SMTP_HOST blank only if you have no users who need email (dev only).
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=<your-smtp-user>
+SMTP_PASSWORD=<your-smtp-password>
+SMTP_FROM_EMAIL=signup@yourdomain.com
+SMTP_USE_TLS=true
+
+# How long an invite link (emailed to an approved user to finish registration)
+# or a password-reset link stays valid.
+INVITE_TOKEN_EXPIRE_HOURS=72
 
 # GeoIP — optional. Path to a MaxMind GeoLite2-Country.mmdb file used to
 # resolve login IPs into ISO-3166 country codes for the admin Users panel.
 # Download from https://www.maxmind.com/ (free account required) and drop the
 # .mmdb file on the VPS. If this is empty or the file is missing, country
 # lookup is silently skipped — logins still work. Refresh the file monthly.
-GEOIP_COUNTRY_DB_PATH=/opt/agentic-doe/geoip/GeoLite2-Country.mmdb
+GEOIP_COUNTRY_DB_PATH=/opt/factorial/geoip/GeoLite2-Country.mmdb
 ```
+
+> Admins are **not** configured via env vars anymore — `users.is_admin` in the database is the source of truth. See Phase 11 for how to bootstrap the first admin.
 
 ### 4.4 — Lock down permissions
 
@@ -262,7 +265,7 @@ neo4j:
 
 The backend (`app`) and frontend services also bind to `127.0.0.1` — all external traffic goes through Caddy (set up in Phase 9).
 
-> **Do NOT use `docker-compose.override.yml`** for port changes. Docker Compose *merges* (concatenates) list fields like `ports` from overrides, creating duplicate bindings that cause "address already in use" errors.
+> **Do NOT use `docker-compose.override.yml`** for port changes. Docker Compose _merges_ (concatenates) list fields like `ports` from overrides, creating duplicate bindings that cause "address already in use" errors.
 
 ---
 
@@ -276,12 +279,12 @@ sudo ss -tlnp | grep -E ':(8000|3000|5432|7474|7687)\b'
 
 If anything is listening, stop it:
 
-| Cause | Fix |
-|-------|-----|
-| Standalone Neo4j | `sudo systemctl stop neo4j && sudo systemctl disable neo4j` |
-| Standalone PostgreSQL | `sudo systemctl stop postgresql && sudo systemctl disable postgresql` |
-| Previous Docker attempt | `docker compose down --remove-orphans` |
-| Ghost Docker state (ss shows nothing but Docker says "in use") | See 6.0a below |
+| Cause                                                          | Fix                                                                   |
+| -------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Standalone Neo4j                                               | `sudo systemctl stop neo4j && sudo systemctl disable neo4j`           |
+| Standalone PostgreSQL                                          | `sudo systemctl stop postgresql && sudo systemctl disable postgresql` |
+| Previous Docker attempt                                        | `docker compose down --remove-orphans`                                |
+| Ghost Docker state (ss shows nothing but Docker says "in use") | See 6.0a below                                                        |
 
 ### 6.0a — Fix ghost Docker state
 
@@ -321,6 +324,7 @@ docker compose logs frontend   # Frontend/nginx
 ```
 
 **Expected:**
+
 - postgres: "database system is ready to accept connections"
 - neo4j: "Started." or "Bolt enabled"
 - app: "Uvicorn running on http://0.0.0.0:8000"
@@ -462,9 +466,9 @@ From your browser:
 
 At your domain registrar, create an A record:
 
-| Type | Name | Value | TTL |
-|------|------|-------|-----|
-| A | `@` or subdomain | `<YOUR_SERVER_IP>` | 300 |
+| Type | Name             | Value              | TTL |
+| ---- | ---------------- | ------------------ | --- |
+| A    | `@` or subdomain | `<YOUR_SERVER_IP>` | 300 |
 
 Verify: `dig yourdomain.com` (for the canonical deployment, the domain is `factori.al`)
 
@@ -519,54 +523,27 @@ docker compose restart app
 
 ## Phase 11: Bootstrap the First Admin User
 
-The app is **invite-only**: `POST /auth/register` is disabled in code, and new users can only register via an invite token issued by an existing admin. This creates a chicken-and-egg problem for the very first deploy — there is no admin yet, so no one can approve the first signup.
+The app is **invite-only**: `POST /auth/register` is disabled in code, and new users can only register via an invite token issued by an existing admin. Since there is no admin yet on a fresh deploy, create one directly with the backend CLI — it inserts a shell `User` row with `is_admin = true` and prints a one-time setup link the admin follows to pick a password.
 
-The one-time workaround is to submit a normal signup request and then approve the DB row manually. You only need to do this once per deployment; after that, use the admin UI at `/admin/signups`.
-
-### 11.1 — Confirm your admin email is set
-
-In `.env`, `ADMIN_EMAILS` must contain the email you are about to use. Emails are matched case-insensitively. If you just edited it, restart the backend:
+### 11.1 — Run the create-admin command
 
 ```bash
-docker compose restart app
+docker compose exec app uv run python -m app.cli create-admin --email you@example.com --name "Your Name"
 ```
 
-### 11.2 — Submit a signup request
-
-In your browser, go to `https://yourdomain.com` (or the IP), click through to the signup form, and submit a request using the exact email you listed in `ADMIN_EMAILS`. The use-case text can be anything.
-
-### 11.3 — Approve the row manually
-
-PostgreSQL runs inside Docker, so open `psql` via the container (see the note in Phase 8.2 — there is no `psql` on the host):
-
-```bash
-docker compose exec postgres psql -U doe_user -d doe_db
-```
-
-At the `doe_db=#` prompt, replace the email and run:
-
-```sql
-UPDATE signup_requests
-SET status = 'approved',
-    invite_token = 'bootstrap-' || md5(random()::text),
-    invite_expires_at = NOW() + INTERVAL '72 hours'
-WHERE email = 'you@example.com'
-RETURNING invite_token;
-```
-
-Copy the returned `invite_token` value, then `\q` to exit.
-
-### 11.4 — Complete registration
-
-In your browser, go to:
+The command prints a setup URL of the form:
 
 ```
-https://yourdomain.com/register/complete?token=<PASTE_TOKEN_HERE>
+https://yourdomain.com/register/complete?token=<SETUP_TOKEN>
 ```
 
-Set a password, log in. Because your email is in `ADMIN_EMAILS`, `/admin/signups` will now load for you, and from this point on you can approve all further signups through the UI.
+(On an IP-only deploy before Phase 10, this will use `http://<YOUR_SERVER_IP>` instead, pulled from `FRONTEND_URL`.)
 
-> Not ideal. A future release should provide either a `bootstrap_admin` management script or auto-approve the first signup if the `users` table is empty and the email matches `ADMIN_EMAILS`.
+### 11.2 — Complete registration
+
+Open the setup URL in your browser and pick a password. You're logged in as an admin; `/admin/users` and `/admin/signups` will load for you, and from here on you can approve further signups and promote/demote other users through the UI.
+
+> The link is valid for `INVITE_TOKEN_EXPIRE_HOURS` (default 72). If it expires before you use it, rerun the `create-admin` command and use the freshly printed setup link.
 
 ---
 
@@ -596,7 +573,7 @@ sudo tee /etc/docker/daemon.json << 'EOF'
 EOF
 
 sudo systemctl restart docker
-cd /home/deploy/agentic-doe
+cd /home/deploy/factorial
 docker compose up -d
 ```
 
@@ -615,7 +592,7 @@ When updating the running server with new code:
 
 ```bash
 ssh deploy@<YOUR_SERVER_IP>
-cd /home/deploy/agentic-doe
+cd /home/deploy/factorial
 
 git pull origin main
 docker compose up --build -d
@@ -639,8 +616,8 @@ Run two backend containers (`app-blue` on `:8000`, `app-green` on `:8001`) along
 
 ```bash
 # State directory that records which colour is currently live.
-sudo install -d -o deploy -g deploy /var/lib/agentic-doe
-echo blue | sudo tee /var/lib/agentic-doe/active-color >/dev/null
+sudo install -d -o deploy -g deploy /var/lib/factorial
+echo blue | sudo tee /var/lib/factorial/active-color >/dev/null
 
 # Allow the deploy user to reload Caddy without a password prompt.
 # (If you already run deploy under full sudo, skip this.)
@@ -689,7 +666,7 @@ docker compose rm -f app
 ### 13b.2 — Deploy a new version
 
 ```bash
-cd /home/deploy/agentic-doe
+cd /home/deploy/factorial
 git pull origin main
 make deploy-bg       # interactive: prompts before each side-effect
 # or
@@ -698,7 +675,7 @@ make deploy-bg-force # non-interactive (e.g. from CI)
 
 What the script does, step by step:
 
-1. Reads `/var/lib/agentic-doe/active-color` → current colour.
+1. Reads `/var/lib/factorial/active-color` → current colour.
 2. Builds the idle colour: `docker compose --profile <next> build app-<next>`.
 3. Starts it: `docker compose --profile <next> up -d app-<next>`.
 4. Polls `http://127.0.0.1:<next-port>/api/v1/health` until it returns 2xx.
@@ -765,7 +742,7 @@ done
 From the VPS after a deploy:
 
 ```bash
-cat /var/lib/agentic-doe/active-color
+cat /var/lib/factorial/active-color
 docker compose ps
 docker compose logs -f app-green --tail=50    # or app-blue
 ```
@@ -783,24 +760,24 @@ PostgreSQL backups are handled by two shell scripts that ship in the repo:
 
 Both scripts are verbose by design (step-by-step output + end-of-run `SUCCESS` / `FAILED` summary) and check credentials **before** touching the database.
 
-**Full operator runbook:** see [`scripts/README.md`](https://github.com/kgdunn/agentic-doe/blob/main/scripts/README.md) for one-time setup (Hetzner bucket + Object Lock + lifecycle rules + credentials on the VPS + cron installation).
+**Full operator runbook:** see [`scripts/README.md`](https://github.com/kgdunn/factorial/blob/main/scripts/README.md) for one-time setup (Hetzner bucket + Object Lock + lifecycle rules + credentials on the VPS + cron installation).
 
 High-level shape once set up:
 
-| Concern | How it's handled |
-|---|---|
-| Storage | Hetzner Object Storage (S3-compatible) — same region as the VPS, free internal traffic |
-| Credentials | AWS CLI profile `doe-backup` on the `deploy` user (`~/.aws/credentials`, 0600) |
-| Retention | Grandfather-Father-Son: `postgres/daily/` (35d), `postgres/weekly/` (100d), `postgres/monthly/` (400d) — enforced by Hetzner **bucket lifecycle rules**, not by script-side deletion |
-| Immutability | Hetzner Object Lock (WORM, compliance mode) on the bucket — stolen credentials cannot delete backups within the retention window |
-| Encryption | `--sse AES256` on every upload |
-| Integrity | `sha256` computed locally + written to object metadata + verified on both upload and restore |
-| Run logs | Per-run log file at `/var/log/doe/backup-<UTC-stamp>.log` (rotated via logrotate) |
-| Run history | `admin_events` table — rows for `in_progress` / `success` / `failed`, with payload: size, sha, s3 key, alembic head, git sha, duration. Viewable in the app at `/admin/events` (filter by `event_type=postgres_backup`). |
-| Dead-man's switch | Optional healthchecks.io URL (`HC_PING_URL`) — pings `/start`, success, `/fail`. Alerts on missed runs, which cron MAILTO cannot. |
-| Failure webhook | Optional `WEBHOOK_URL` — Slack/Discord POST on failure |
-| Concurrency | `flock` on `/var/lock/doe-backup.lock` |
-| Restore drill | Weekly `scripts/restore-drill.sh` — restores latest backup to a scratch DB, runs smoke queries, drops it, logs `restore_drill` event |
+| Concern           | How it's handled                                                                                                                                                                                                         |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Storage           | Hetzner Object Storage (S3-compatible) — same region as the VPS, free internal traffic                                                                                                                                   |
+| Credentials       | AWS CLI profile `doe-backup` on the `deploy` user (`~/.aws/credentials`, 0600)                                                                                                                                           |
+| Retention         | Grandfather-Father-Son: `postgres/daily/` (35d), `postgres/weekly/` (100d), `postgres/monthly/` (400d) — enforced by Hetzner **bucket lifecycle rules**, not by script-side deletion                                     |
+| Immutability      | Hetzner Object Lock (WORM, compliance mode) on the bucket — stolen credentials cannot delete backups within the retention window                                                                                         |
+| Encryption        | `--sse AES256` on every upload                                                                                                                                                                                           |
+| Integrity         | `sha256` computed locally + written to object metadata + verified on both upload and restore                                                                                                                             |
+| Run logs          | Per-run log file at `/var/log/doe/backup-<UTC-stamp>.log` (rotated via logrotate)                                                                                                                                        |
+| Run history       | `admin_events` table — rows for `in_progress` / `success` / `failed`, with payload: size, sha, s3 key, alembic head, git sha, duration. Viewable in the app at `/admin/events` (filter by `event_type=postgres_backup`). |
+| Dead-man's switch | Optional healthchecks.io URL (`HC_PING_URL`) — pings `/start`, success, `/fail`. Alerts on missed runs, which cron MAILTO cannot.                                                                                        |
+| Failure webhook   | Optional `WEBHOOK_URL` — Slack/Discord POST on failure                                                                                                                                                                   |
+| Concurrency       | `flock` on `/var/lock/doe-backup.lock`                                                                                                                                                                                   |
+| Restore drill     | Weekly `scripts/restore-drill.sh` — restores latest backup to a scratch DB, runs smoke queries, drops it, logs `restore_drill` event                                                                                     |
 
 Quick ad-hoc commands (once the scripts are installed and credentials are configured):
 
@@ -825,7 +802,7 @@ Quick ad-hoc commands (once the scripts are installed and credentials are config
 ```bash
 docker compose stop neo4j
 docker run --rm \
-  -v agentic-doe_neo4j_data:/data \
+  -v factorial_neo4j_data:/data \
   -v $(pwd):/backup \
   alpine tar czf /backup/neo4j_backup_$(date +%Y%m%d).tar.gz /data
 docker compose start neo4j
@@ -833,61 +810,61 @@ docker compose start neo4j
 
 ### Automated daily backup (cron)
 
-Cron entries are version-controlled at [`deploy/cron/doe-backup.cron`](https://github.com/kgdunn/agentic-doe/blob/main/deploy/cron/doe-backup.cron). Install with:
+Cron entries are version-controlled at [`deploy/cron/doe-backup.cron`](https://github.com/kgdunn/factorial/blob/main/deploy/cron/doe-backup.cron). Install with:
 
 ```bash
-sudo cp /home/deploy/agentic-doe/deploy/cron/doe-backup.cron /etc/cron.d/doe-backup
+sudo cp /home/deploy/factorial/deploy/cron/doe-backup.cron /etc/cron.d/doe-backup
 sudo chown root:root /etc/cron.d/doe-backup
 sudo chmod 0644 /etc/cron.d/doe-backup
 ```
 
 Schedule (all times UTC, offset off the hour to avoid platform-wide cron pile-ups):
 
-| When | What |
-|---|---|
-| Daily 03:07 | `backup-postgres.sh daily` |
-| Sunday 03:30 | `backup-postgres.sh weekly` |
+| When               | What                         |
+| ------------------ | ---------------------------- |
+| Daily 03:07        | `backup-postgres.sh daily`   |
+| Sunday 03:30       | `backup-postgres.sh weekly`  |
 | 1st of month 04:00 | `backup-postgres.sh monthly` |
-| Monday 04:30 | `restore-drill.sh` |
+| Monday 04:30       | `restore-drill.sh`           |
 
-Log rotation is handled by [`deploy/logrotate/doe-backup`](https://github.com/kgdunn/agentic-doe/blob/main/deploy/logrotate/doe-backup), installed into `/etc/logrotate.d/`.
+Log rotation is handled by [`deploy/logrotate/doe-backup`](https://github.com/kgdunn/factorial/blob/main/deploy/logrotate/doe-backup), installed into `/etc/logrotate.d/`.
 
 ---
 
 ## Quick Reference
 
-| Task | Command |
-|------|---------|
-| Start all services | `docker compose up -d` |
-| Stop all services | `docker compose down` |
-| Rebuild and restart | `docker compose up --build -d` |
-| View all logs (once) | `docker compose logs` |
-| Tail backend + frontend | `make logs` (or `docker compose logs -f --tail=100 app frontend`) |
-| Tail backend only | `make logs-app` (or `docker compose logs -f --tail=100 app`) |
-| Tail frontend only | `make logs-frontend` (or `docker compose logs -f --tail=100 frontend`) |
-| Check service health | `docker compose ps` |
-| Run migrations | `docker compose exec app uv run alembic upgrade head` |
-| Restart one service | `docker compose restart app` |
-| Shell into backend | `docker compose exec app bash` |
-| Shell into postgres | `docker compose exec postgres psql -U doe_user doe_db` |
-| Disk usage | `docker system df` |
-| Clean unused images | `docker image prune -f` |
-| Full cleanup (DANGER) | `docker compose down -v --remove-orphans` |
+| Task                    | Command                                                                |
+| ----------------------- | ---------------------------------------------------------------------- |
+| Start all services      | `docker compose up -d`                                                 |
+| Stop all services       | `docker compose down`                                                  |
+| Rebuild and restart     | `docker compose up --build -d`                                         |
+| View all logs (once)    | `docker compose logs`                                                  |
+| Tail backend + frontend | `make logs` (or `docker compose logs -f --tail=100 app frontend`)      |
+| Tail backend only       | `make logs-app` (or `docker compose logs -f --tail=100 app`)           |
+| Tail frontend only      | `make logs-frontend` (or `docker compose logs -f --tail=100 frontend`) |
+| Check service health    | `docker compose ps`                                                    |
+| Run migrations          | `docker compose exec app uv run alembic upgrade head`                  |
+| Restart one service     | `docker compose restart app`                                           |
+| Shell into backend      | `docker compose exec app bash`                                         |
+| Shell into postgres     | `docker compose exec postgres psql -U doe_user doe_db`                 |
+| Disk usage              | `docker system df`                                                     |
+| Clean unused images     | `docker image prune -f`                                                |
+| Full cleanup (DANGER)   | `docker compose down -v --remove-orphans`                              |
 
 ---
 
 ## Troubleshooting
 
-| Symptom | Likely Cause | Fix |
-|---------|-------------|-----|
-| Backend crashes on startup | Database not ready | `docker compose restart app` after 30s |
-| "Connection refused" to API | Backend not running | `docker compose ps` + `docker compose logs app` |
-| Frontend shows blank page | SvelteKit build failed | `docker compose logs frontend` |
-| Neo4j "unhealthy" | Slow startup (30s+) | Wait, check `docker compose logs neo4j` |
-| Can't connect from browser | UFW blocking port | `sudo ufw status` — port 80 must be open |
-| `https://...` refused / `ERR_CONNECTION_REFUSED` on 443 | Caddyfile still has `:80 { ... }` (Phase 9) instead of a domain block (Phase 10) — no cert, no 443 listener | Do Phase 10 with your real domain; confirm `sudo ss -tlnp \| grep 443` after reload |
-| Caddy log spams `dial tcp [::1]:<port>: connect: connection refused` | `reverse_proxy localhost:...` resolves to IPv6 but Docker binds IPv4 only | Use `127.0.0.1:<port>` in Caddyfile, then `sudo systemctl reload caddy` |
-| "CORS error" in browser | `CORS_ORIGINS` / `FRONTEND_URL` / `PUBLIC_API_URL` mismatch | Update `.env` so all three match the public origin, then `docker compose restart app` |
-| "address already in use" | Ghost Docker state | `docker compose down --remove-orphans && sudo systemctl restart docker` |
-| Docker build OOM | Not enough RAM | `free -h` — need at least 4GB, 8GB recommended |
-| Disk full | Docker images/logs | `docker system prune -f` |
+| Symptom                                                              | Likely Cause                                                                                                | Fix                                                                                   |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Backend crashes on startup                                           | Database not ready                                                                                          | `docker compose restart app` after 30s                                                |
+| "Connection refused" to API                                          | Backend not running                                                                                         | `docker compose ps` + `docker compose logs app`                                       |
+| Frontend shows blank page                                            | SvelteKit build failed                                                                                      | `docker compose logs frontend`                                                        |
+| Neo4j "unhealthy"                                                    | Slow startup (30s+)                                                                                         | Wait, check `docker compose logs neo4j`                                               |
+| Can't connect from browser                                           | UFW blocking port                                                                                           | `sudo ufw status` — port 80 must be open                                              |
+| `https://...` refused / `ERR_CONNECTION_REFUSED` on 443              | Caddyfile still has `:80 { ... }` (Phase 9) instead of a domain block (Phase 10) — no cert, no 443 listener | Do Phase 10 with your real domain; confirm `sudo ss -tlnp \| grep 443` after reload   |
+| Caddy log spams `dial tcp [::1]:<port>: connect: connection refused` | `reverse_proxy localhost:...` resolves to IPv6 but Docker binds IPv4 only                                   | Use `127.0.0.1:<port>` in Caddyfile, then `sudo systemctl reload caddy`               |
+| "CORS error" in browser                                              | `CORS_ORIGINS` / `FRONTEND_URL` / `PUBLIC_API_URL` mismatch                                                 | Update `.env` so all three match the public origin, then `docker compose restart app` |
+| "address already in use"                                             | Ghost Docker state                                                                                          | `docker compose down --remove-orphans && sudo systemctl restart docker`               |
+| Docker build OOM                                                     | Not enough RAM                                                                                              | `free -h` — need at least 4GB, 8GB recommended                                        |
+| Disk full                                                            | Docker images/logs                                                                                          | `docker system prune -f`                                                              |

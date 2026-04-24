@@ -13,15 +13,15 @@ HOME=/home/deploy
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # Daily backup (35-day retention) — every day at 03:07 UTC.
-7  3 * * *   deploy /home/deploy/agentic-doe/scripts/cron-backup-wrapper.sh daily
+7  3 * * *   deploy /home/deploy/factorial/scripts/cron-backup-wrapper.sh daily
 
 # Weekly backup (100-day retention) — Sunday at 03:30 UTC.
-30 3 * * 0   deploy /home/deploy/agentic-doe/scripts/cron-backup-wrapper.sh weekly
+30 3 * * 0   deploy /home/deploy/factorial/scripts/cron-backup-wrapper.sh weekly
 
 # Monthly backup (400-day retention) — 1st of every month at 04:00 UTC.
-0  4 1 * *   deploy /home/deploy/agentic-doe/scripts/cron-backup-wrapper.sh monthly
+0  4 1 * *   deploy /home/deploy/factorial/scripts/cron-backup-wrapper.sh monthly
 
 # Restore drill — Monday at 04:30 UTC. Restores the newest daily
 # backup into a scratch DB, runs smoke queries, drops it, writes a
 # restore_drill event to admin_events.
-30 4 * * 1   deploy /home/deploy/agentic-doe/scripts/restore-drill.sh
+30 4 * * 1   deploy /home/deploy/factorial/scripts/restore-drill.sh
