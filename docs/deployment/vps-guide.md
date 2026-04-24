@@ -523,19 +523,24 @@ The app is **invite-only**: `POST /auth/register` is disabled in code, and new u
 docker compose exec app uv run python -m app.cli create-admin --email you@example.com --name "Your Name"
 ```
 
-The command prints a setup URL of the form:
+The command builds a setup URL of the form:
 
 ```
-https://yourdomain.com/register/complete?token=<SETUP_TOKEN>
+https://yourdomain.com/auth/setup?token=<SETUP_TOKEN>
 ```
 
 (On an IP-only deploy before Phase 10, this will use `http://<YOUR_SERVER_IP>` instead, pulled from `FRONTEND_URL`.)
+
+How you receive the URL depends on whether SMTP is configured (`SMTP_HOST` set in `.env`):
+
+- **SMTP configured:** the link is emailed to the admin and the CLI just prints `Setup link emailed to <email> (valid 72h).` — open the email to get the URL.
+- **SMTP not configured:** the link is printed directly to stdout as `Setup link (valid 72h): https://.../auth/setup?token=...`.
 
 ### 11.2 — Complete registration
 
 Open the setup URL in your browser and pick a password. You're logged in as an admin; `/admin/users` and `/admin/signups` will load for you, and from here on you can approve further signups and promote/demote other users through the UI.
 
-> The link is valid for `INVITE_TOKEN_EXPIRE_HOURS` (default 72). If it expires before you use it, rerun the `create-admin` command and use the freshly printed setup link.
+> The link is valid for `INVITE_TOKEN_EXPIRE_HOURS` (default 72). If it expires before you use it, rerun the `create-admin` command and use the freshly issued setup link.
 
 ---
 

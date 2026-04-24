@@ -19,8 +19,10 @@
 
   // Pages that don't require authentication
   const publicPaths = ['/', '/login', '/register', '/register/complete', '/prototype'];
-  // Path prefixes that don't require authentication
-  const publicPathPrefixes = ['/share/'];
+  // Path prefixes that don't require authentication.
+  // /auth/ holds the token-gated pages /auth/setup and /auth/reset, which
+  // an unauthenticated user must reach via an emailed link.
+  const publicPathPrefixes = ['/share/', '/auth/'];
 
   function isPublicPath(path: string): boolean {
     if (publicPaths.includes(path)) return true;
