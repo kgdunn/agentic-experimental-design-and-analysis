@@ -21,10 +21,26 @@
   $effect(() => {
     const len = chatState.messages.length;
     const streaming = chatState.isStreaming;
+    // Subscribe to the last message's content so streaming token updates
+    // re-trigger the effect, not just the arrival of a new message.
+    const lastMsg = chatState.messages[len - 1];
+    if (lastMsg) {
+      for (const block of lastMsg.content) {
+        if (block.type === 'text') {
+          void block.text.length;
+        } else if (block.type === 'tool_use') {
+          void block.isLoading;
+        }
+      }
+    }
     if (len > 0 && !userScrolledUp && messageList) {
-      void streaming;
       requestAnimationFrame(() => {
-        messageList?.scrollTo({ top: messageList.scrollHeight, behavior: 'smooth' });
+        messageList?.scrollTo({
+          top: messageList.scrollHeight,
+          // Smooth scroll fights with rapid token updates; only animate
+          // when the stream is idle (e.g. after a new message is sent).
+          behavior: streaming ? 'auto' : 'smooth',
+        });
       });
     }
   });
