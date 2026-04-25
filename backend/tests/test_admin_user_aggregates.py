@@ -133,3 +133,35 @@ async def test_list_users_rolls_up_conversation_feedback_experiment_balance_sign
 
     assert agg.signup_status == "registered"
     assert agg.disclaimers_accepted is True
+
+
+async def test_list_users_handles_null_and_non_array_results_data(db_session: AsyncSession) -> None:
+    """Regression: a user whose experiments include NULL or non-array results_data
+    must not blow up the aggregation. Production hit a 500 here when the
+    SQL path used ``json_array_length(coalesce(results_data, '[]'))`` and
+    Postgres rejected the COALESCE type mix / non-array shapes.
+    """
+    user = User(
+        email="mixed@example.com",
+        password_hash="x",  # noqa: S106 — fixture-only
+    )
+    db_session.add(user)
+    await db_session.flush()
+
+    db_session.add_all(
+        [
+            Experiment(user_id=user.id, status="draft", results_data=None),
+            Experiment(user_id=user.id, status="draft", results_data=[{"r": 1}, {"r": 2}, {"r": 3}]),
+            Experiment(user_id=user.id, status="completed", results_data={"unexpected": "object"}),
+        ]
+    )
+    await db_session.flush()
+
+    _users, aggregates, _total = await admin_service.list_users(db_session)
+    agg = aggregates[user.id]
+
+    # Two non-completed experiments.
+    assert agg.open_experiments == 2
+    # Lengths: NULL → 0, list[3] → 3, dict → 0; mean = 1.0.
+    assert agg.avg_runs_per_experiment is not None
+    assert abs(agg.avg_runs_per_experiment - 1.0) < 1e-6
