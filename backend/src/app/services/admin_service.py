@@ -8,7 +8,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import case, func, or_, select
+from sqlalchemy import JSON, case, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.conversation import Conversation
@@ -178,12 +178,15 @@ async def _aggregate_for_users(
     # Average runs = average JSON array length of results_data across the user's
     # experiments.  json_array_length works on both SQLite and PostgreSQL for
     # JSON-typed columns (Experiment.results_data is declared as plain JSON).
+    # Postgres rejects ``coalesce(<json>, '[]')`` because the bound literal is
+    # VARCHAR; cast it to JSON so both COALESCE branches share a type.
     open_case = case((Experiment.status != "completed", 1), else_=0)
+    empty_json_array = cast("[]", JSON)
     exp_rows = await db.execute(
         select(
             Experiment.user_id,
             func.coalesce(func.sum(open_case), 0),
-            func.avg(func.json_array_length(func.coalesce(Experiment.results_data, "[]"))),
+            func.avg(func.json_array_length(func.coalesce(Experiment.results_data, empty_json_array))),
         )
         .where(Experiment.user_id.in_(ids))
         .group_by(Experiment.user_id)
