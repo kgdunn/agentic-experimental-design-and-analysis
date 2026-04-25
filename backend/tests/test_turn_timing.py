@@ -79,8 +79,12 @@ def test_event_emits_one_record(timing_log: Path) -> None:
 
 def test_phase_records_error_status(timing_log: Path) -> None:
     timer = TurnTimer(conversation_id=uuid.uuid4(), turn_id=uuid.uuid4())
-    with pytest.raises(RuntimeError), timer.phase("agent_loop"):
-        raise RuntimeError("boom")
+    # Nested form (rather than ``with pytest.raises(...), timer.phase(...):``)
+    # so static analysers can see the body of ``timer.phase`` runs and the
+    # records assertions afterwards are reachable.
+    with pytest.raises(RuntimeError):  # noqa: SIM117
+        with timer.phase("agent_loop"):
+            raise RuntimeError("boom")
 
     records = _read_records(timing_log)
     assert len(records) == 1

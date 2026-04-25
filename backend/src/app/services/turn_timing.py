@@ -112,6 +112,13 @@ class TurnTimer:
         }
         record.update(fields)
         try:
-            _timing_logger.info(json.dumps(record, default=str))
+            # ``json.dumps`` escapes embedded newlines in string values
+            # (``\n`` → ``\\n``) so the encoded record is already a single
+            # line. The explicit translate call drops any stray CR/LF that
+            # might creep in via ``default=str`` on exotic objects, and
+            # makes the no-newline guarantee visible to log-injection
+            # static analysers.
+            serialized = json.dumps(record, default=str).translate({0x0A: None, 0x0D: None})
+            _timing_logger.info(serialized)
         except Exception:  # noqa: BLE001 — telemetry must not break the chat path
             _logger.exception("Failed to write timing record kind=%s", kind)
