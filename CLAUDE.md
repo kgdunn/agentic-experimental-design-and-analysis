@@ -277,4 +277,5 @@ Code session and to update it as part of every PR:
 
 ### Redis
 - Deferred for now (commented out in docker-compose.yml)
-- Will be added for session state, agent conversation caching, JWT token blacklisting
+- Will be added for agent conversation caching when warranted (sessions are
+  in Postgres now, no JWT blacklist needed)
