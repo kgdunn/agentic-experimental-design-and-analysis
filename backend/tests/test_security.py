@@ -142,7 +142,8 @@ class TestCorsConfig:
         s = Settings(app_env="production")
         assert "Content-Type" in s.cors_allow_headers
         assert "X-API-Key" in s.cors_allow_headers
-        assert "Authorization" in s.cors_allow_headers
+        assert "X-CSRF-Token" in s.cors_allow_headers
+        assert "Authorization" not in s.cors_allow_headers
 
     def test_development_headers_wildcard(self):
         s = Settings(app_env="development")
