@@ -24,6 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libxrandr2 \
         libgbm1 \
         libasound2 \
+        jq \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

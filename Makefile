@@ -1,6 +1,7 @@
 .PHONY: help install relock debug deploy deploy-preflight deploy-up deploy-migrate \
        deploy-bg deploy-bg-force rollback-bg \
        logs logs-app logs-frontend \
+       timing-tail timing-slowest timing-turn timing-by-kind timing-tools-slowest \
        clean lint format test migrate \
        frontend-install frontend-dev frontend-build \
        docs-serve docs-build \
@@ -41,6 +42,13 @@ help:
 	@echo "  logs-app           Tail backend (FastAPI) logs only"
 	@echo "  logs-frontend      Tail frontend (nginx) logs only"
 	@echo "  clean              Tear down Docker services and remove caches"
+	@echo ""
+	@echo "Chat-turn timing (reads TIMING_LOG inside the app container; default /app/logs/timing.jsonl):"
+	@echo "  timing-tail        Live tail timing.jsonl pretty-printed via jq"
+	@echo "  timing-slowest     Top 10 slowest turns by total duration"
+	@echo "  timing-turn TURN=<id>  All records for one turn_id"
+	@echo "  timing-by-kind     Aggregate ms + count grouped by record kind"
+	@echo "  timing-tools-slowest   Top 10 slowest tool calls"
 	@echo ""
 	@echo "Backups (S3-compatible, see scripts/README.md):"
 	@echo "  backup-db-dry-run  Preflight the backup script (no dump, no upload)"
@@ -155,6 +163,32 @@ logs-app:
 
 logs-frontend:
 	docker compose logs -f --tail=100 frontend
+
+# ── Chat-turn timing (TIMING_LOG_PATH JSONL) ─────────────
+# The agent loop writes one JSON Lines record per phase /
+# api_call / tool / turn_total to TIMING_LOG_PATH (see
+# backend/src/app/services/turn_timing.py and PR #101).
+# These targets shell into the app container to query the
+# file with jq. Override the path with TIMING_LOG=... if
+# you've changed it in .env.
+
+TIMING_LOG ?= /app/logs/timing.jsonl
+
+timing-tail:
+	docker compose exec app sh -c 'tail -f $(TIMING_LOG) | jq .'
+
+timing-slowest:
+	docker compose exec app jq -s 'map(select(.kind=="turn_total")) | sort_by(-.duration_ms) | .[0:10]' $(TIMING_LOG)
+
+timing-turn:
+	@test -n "$(TURN)" || { echo 'Usage: make timing-turn TURN=<turn_id>'; exit 2; }
+	docker compose exec app jq -s --arg t '$(TURN)' 'map(select(.turn_id==$$t))' $(TIMING_LOG)
+
+timing-by-kind:
+	docker compose exec app jq -s 'group_by(.kind) | map({kind: .[0].kind, total_ms: (map(.duration_ms // .total_ms // 0) | add), n: length})' $(TIMING_LOG)
+
+timing-tools-slowest:
+	docker compose exec app jq -s 'map(select(.kind=="tool")) | sort_by(-.duration_ms) | .[0:10] | map({tool, duration_ms, status, agent_turn, turn_id})' $(TIMING_LOG)
 
 clean:
 	docker compose down -v --remove-orphans 2>/dev/null || true
