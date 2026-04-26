@@ -143,6 +143,7 @@ class TestRecordHistory:
         row = (await db_session.execute(select(BYOKCredentialsHistory))).scalars().first()
         assert row is not None
         assert row.status_after == STATUS_ACTIVE
-        # SQLite drops tzinfo on round-trip; compare naive components.
         assert row.last_verified_at is not None
+        # Strip tzinfo for the comparison so the assertion stays portable
+        # if the test DB driver ever returns naive datetimes.
         assert row.last_verified_at.replace(tzinfo=None) == user.byok_token_last_verified_at.replace(tzinfo=None)
