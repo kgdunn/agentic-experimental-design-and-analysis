@@ -135,6 +135,8 @@ deploy: deploy-preflight deploy-up deploy-migrate
 deploy-preflight:
 	@echo "==> Checking .env file..."
 	@test -f .env || { echo "ERROR: .env not found. Run: cp .env.example .env  and configure it."; exit 1; }
+	@echo "==> Verifying .env contains every key from .env.example..."
+	@sh ./scripts/check-env-keys.sh
 	@echo "==> Installing dependencies..."
 	@$(MAKE) install
 	@echo "==> Running lint checks..."
