@@ -17,7 +17,6 @@ from app.services.byok_service import (
     BYOKDecryptionError,
 )
 
-
 # ---------------------------------------------------------------------------
 # Fast Argon2id parameters for tests.
 # Production defaults take ~250 ms per derivation; that adds up across a
