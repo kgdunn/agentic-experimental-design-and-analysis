@@ -7,6 +7,7 @@
     revokeSession,
     type SessionSummary,
   } from '$lib/api/sessions';
+  import BYOKSection from '$lib/components/BYOKSection.svelte';
 
   let sessions = $state<SessionSummary[]>([]);
   let loading = $state(true);
@@ -94,6 +95,10 @@
         {/if}
       </dl>
     </section>
+  {/if}
+
+  {#if authState.user}
+    <BYOKSection />
   {/if}
 
   <section class="mb-6 rounded-lg border border-rule bg-paper-2 p-5">
