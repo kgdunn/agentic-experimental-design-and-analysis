@@ -14,11 +14,21 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
+def _resolve_url() -> str:
+    """Pick the database URL Alembic should target.
+
+    Honour ``sqlalchemy.url`` if a caller set it programmatically (e.g.
+    the test conftest pointing at the test database); otherwise fall
+    back to the production ``database_url_sync``. Keeps ``make migrate``
+    and a bare ``alembic upgrade head`` working unchanged.
+    """
+    return config.get_main_option("sqlalchemy.url") or settings.database_url_sync
+
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode (generates SQL without connecting)."""
-    url = settings.database_url_sync
     context.configure(
-        url=url,
+        url=_resolve_url(),
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -29,7 +39,7 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode (connects to the database)."""
-    connectable = create_engine(settings.database_url_sync, poolclass=pool.NullPool)
+    connectable = create_engine(_resolve_url(), poolclass=pool.NullPool)
 
     with connectable.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)
