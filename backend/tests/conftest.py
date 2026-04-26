@@ -13,7 +13,7 @@ fails the test suite immediately rather than at deploy time. Each test
 runs inside an outer transaction that is rolled back at teardown, so
 the database is fully isolated between tests with sub-second overhead.
 
-See ``backend/docs/testing-database.md`` for the design rationale and
+See ``docs/development/testing-database.md`` for the design rationale and
 the developer / CI workflow.
 """
 
