@@ -4,6 +4,7 @@
   import MessageBubble from './MessageBubble.svelte';
   import Btn from './brand/Btn.svelte';
   import DetailLevelControl from './brand/DetailLevelControl.svelte';
+  import VoiceInputButton from './brand/VoiceInputButton.svelte';
 
   let messageList: HTMLDivElement | undefined = $state();
   let inputEl: HTMLTextAreaElement | undefined = $state();
@@ -203,6 +204,12 @@
         onkeydown={handleKeydown}
         disabled={chatState.isStreaming}
       ></textarea>
+      <VoiceInputButton
+        onTranscript={(t) => {
+          inputText = inputText ? inputText.trimEnd() + ' ' + t : t;
+        }}
+        disabled={chatState.isStreaming}
+      />
       {#if chatState.isStreaming}
         <Btn variant="ghost" size="sm" onclick={() => chatState.cancelStream()}>Cancel</Btn>
       {:else}
