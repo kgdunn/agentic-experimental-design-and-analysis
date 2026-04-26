@@ -64,6 +64,7 @@ nav:
       - Agent Tools: architecture/agent-tools.md
       - Knowledge Graph: architecture/knowledge-graph.md
       - Reproducibility: architecture/reproducibility.md
+      - BYO Anthropic Token: architecture/byok-anthropic-token.md
   - Frontend:
       - Specification: frontend/specification.md
   - Development:
